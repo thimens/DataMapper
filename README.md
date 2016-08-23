@@ -14,7 +14,7 @@ The **ExecuteScalar** and **ExecuteNonQuery** are just extensions of original me
 The **Get\<T>** method returns a single object filled with data from database. The **List\<T>** method returns a list of objects.
 
 ## Get method
-Use this method to fill a single object from database. To do so, the fields of the result set returned by the query need to have the same name of properties of the object that you want to fill (not case sensitive). Properties and fields with different names are ignored.
+Use this method to fill a single object from database. To do so, the fields of the result set returned by the query need to have the same name of properties of the object that you want to fill (not case sensitive). Properties and fields with different names are ignored.  
 You can use the **Parameter** class to add parameters to your query. If it is not necessary, just use *null* in the call.
 
 ### Basic usage
