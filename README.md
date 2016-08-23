@@ -80,11 +80,13 @@ return db.Get<Order>(CommandType.Text, query, parameters);
 For deeper levels of nested objects, just continue to use periods (.).
 
 `"MainProperty.Level1Property.Level2Property.Level3Property...(and so on)"`
+
 For example:
 
 `@"select s.Name as ""Order.Store.Name"" from Order o inner join Store s on o.StoreId = s.Id where o.OrderNumber = @OrderNumber"`
 
 Or:
+
 `@"select c.AdrZip as ""Order.Client.Address.Zip"" from Order o inner join Client c on o.ClientId = c.Id where o.OrderNumber = @OrderNumber"`
 
 ### Nested Lists
