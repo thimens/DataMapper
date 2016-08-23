@@ -6,12 +6,12 @@ With these extensions, you can fill your classes directly from database.
 There are these four methods:
  * ExecuteScalar
  * ExecuteNonQuery
- * Get<T>
- * List<T>
+ * Get\<T>
+ * List\<T>
 
 The **ExecuteScalar** and **ExecuteNonQuery** are just extensions of original methods of Database class, but now accepting new parameters. The first one  returns the first column of the first row in the result set returned by a query, and the last one returns the numbers of rows affected by the query.
 
-The **Get<T>** method returns a single object filled with data from database. The **List<T>** method returns a list of objects.
+The **Get\<T>** method returns a single object filled with data from database. The **List\<T>** method returns a list of objects.
 
 ## Get method
 Use this method to fill a single object from database. To do so, the fields of the result set returned by the query need to have the same name of properties of the object that you want to fill (not case sensitive). Properties and fields with different names are ignored.
