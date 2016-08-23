@@ -340,8 +340,7 @@ namespace Thimens.DataMapper
             //hack for DB2 with odbc provider - no comma for decimal values
             if (dataReader[columnName].GetType() == typeof(decimal) && database.DbProviderFactory.ToString() == "System.Data.Odbc.OdbcFactory")
             {
-                //procurar a qtde de casas decimais definida na base de dados para o campo do tipo decimal 
-                //e fazer a divisão do valor retornado por 10^x, onde x é a qtde de casas decimais, para achar o valor real do campo
+                //search for decimal points defined in database to correct the value read from datareader
                 var tableSchema = dataReader.GetSchemaTable();
                 var columnSchema = tableSchema.Select(string.Format("ColumnName = '{0}'", columnName)).FirstOrDefault();
                 var numericScaleInfo = tableSchema.Columns["NumericScale"];
@@ -372,7 +371,7 @@ namespace Thimens.DataMapper
             else if (dataReader[columnName].GetType() == typeof(string))
                 //check if the database field are a string used as boolean ('Y', 'N') and the property is boolean
                 if (type == typeof(bool))
-                    return dataReader[columnName].ToString().Trim().Replace('"', '\'').ToLower() == "s" ? true : false;
+                    return dataReader[columnName].ToString().Trim().Replace('"', '\'').ToLower() == "y" ? true : false;
                 else
                     return Convert.ChangeType(dataReader[columnName].ToString().Trim().Replace('"', '\''), Nullable.GetUnderlyingType(type) ?? type);
             else
