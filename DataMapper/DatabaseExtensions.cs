@@ -9,7 +9,7 @@ using System.Collections;
 using System.Reflection;
 using System.Data.Common;
 
-namespace GPA.ECom.Infra.Data
+namespace Thimens.DataMapper
 {
     public static class DbExtensions
     {
