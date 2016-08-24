@@ -31,7 +31,7 @@ public class Order
 ```
 The code:
 ```c#
-var db = new DatabaseProviderFactory().Create("DbConnection"); //create a new Database object
+var db = new DatabaseProviderFactory().Create("DbConnection"); //create a new Database object from 'DbConnection' connection string
 
 var query = "select OrderNumber as Id, ClientName, DtDelivery as DeliveryDate, Freight from Order where OrderNumber = @OrderNumber";
 
@@ -67,7 +67,7 @@ public class Address
 ```
 The code:
 ```c#
-var db = new DatabaseProviderFactory().Create("DbConnection"); //create a new Database object
+var db = new DatabaseProviderFactory().Create("DbConnection"); //create a new Database object from 'DbConnection' connection string
 
 var query = @"select OrderNumber as Id, ClientName, Street as ""Address.Street"", Number as ""Address.Number"", zip as ""Address.Zip""
 from Order where OrderNumber = @OrderNumber";
@@ -106,7 +106,7 @@ public class Product
 ```
 The code:
 ```c#
-var db = new DatabaseProviderFactory().Create("DbConnection"); //create a new Database object
+var db = new DatabaseProviderFactory().Create("DbConnection"); //create a new Database object from 'DbConnection' connection string
 
 var query = @"select o.OrderNumber as Id, o.ClientName, p.Id as ""Products.Id"", p.Quantity as ""Products.Quantity"", p.Name as ""Products.Name"" from Order o inner join OrderProduct p on o.OrderNumber = p.OrderNumber where o.OrderNumber = @OrderNumber";
 
@@ -146,7 +146,7 @@ public class Class
 ```
 The code:
 ```c#
-var db = new DatabaseProviderFactory().Create("DbConnection"); //create a new Database object
+var db = new DatabaseProviderFactory().Create("DbConnection"); //create a new Database object from 'DbConnection' connection string
 
 var query = @"select sc.Id, sc.Name, st.Id ""Students.Id"", st.Name ""Students.Name"", c.Id ""Students.Classes.Id"", c.Name ""Students.Classes.Name"" from School sc inner join Students st on sc.Id = st.SchoolId inner join StudentClass c on c.StudentId = st.Id  where sc.Id = @SchoolId";
 
@@ -204,7 +204,7 @@ public class Order
 ```
 The code:
 ```c#
-var db = new DatabaseProviderFactory().Create("DbConnection"); //create a new Database object
+var db = new DatabaseProviderFactory().Create("DbConnection"); //create a new Database object from 'DbConnection' connection string
 
 var query = "select OrderNumber as Id, ClientName, DtDelivery as DeliveryDate, Freight from Order";
 
@@ -234,7 +234,7 @@ public enum Status
 ```
 The code:
 ```c#
-var db = new DatabaseProviderFactory().Create("DbConnection"); //create a new Database object
+var db = new DatabaseProviderFactory().Create("DbConnection"); //create a new Database object from 'DbConnection' connection string
 
 var query = @"select Id, ClientName, Status from Subscription where id = @id";
 
@@ -250,14 +250,14 @@ return db.Get<Subscription>(CommandType.Text, query, parameters);
 ## ExecuteScalar and ExecuteNonQuery
 As said before, **ExecuteScalar** and **ExecuteNonQuery** are just extensions of original methods of Database class, but now accepting new parameters. The first one  returns the first column of the first row in the result set returned by a query, and the last one returns the numbers of rows affected by the query.
 ```c#
-var db = new DatabaseProviderFactory().Create("DbConnection"); //create a new Database object
+var db = new DatabaseProviderFactory().Create("DbConnection"); //create a new Database object from 'DbConnection' connection string
 
 var query = "select count(Id) from Order";
 
 return (int)db.ExecuteScalar(CommandType.Text, query, null); //no parameters -- returns the value of 'count(Id)'
 ```
 ```c#
-var db = new DatabaseProviderFactory().Create("DbConnection"); //create a new Database object
+var db = new DatabaseProviderFactory().Create("DbConnection"); //create a new Database object from 'DbConnection' connection string
 
 var query = "update Student set (firstName, lastName) = (@firstName, @lastName) where id = @id";
 
