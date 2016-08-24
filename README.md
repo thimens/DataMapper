@@ -183,8 +183,8 @@ The property `Id` will be used as key to fill the list of orders.
 
 ## Special conversions
 There are two special conversions that you can use:
-1.You can fill a enum property in your class from a string column of database, if your enum values have the `DefaultValue` attribute on them.  
-For example, if you have the following values on status column of a subscription table: "P" (Paused), "A" (Active), "I" (Idle)
+1.You can fill a enum property of your class from a string column of database, if your enum values have the `DefaultValue` attribute on them.  
+For example, if you have the following values on `Status` column of a `Subscription` table: `"P"` (Paused), `"A"` (Active), `"I"` (Idle)  
 The class:
 ```c#
 public class Subscription
@@ -212,8 +212,7 @@ parameters.Add(new Parameter("@id", DbType.Int32, id));
 
 return db.Get<Subscription>(CommandType.Text, query, parameters);
 ```
-
-2.You can fill a bool property in your class from a string column of database, if this column is a 'Y' - 'N' field.  
+2.You can fill a bool property of your class from a string column, if this column has `"Y" - "N"` values.  
 
 
 
