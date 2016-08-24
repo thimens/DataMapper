@@ -9,9 +9,9 @@ There are these four methods:
  * Get\<T>
  * List\<T>
 
-The **ExecuteScalar** and **ExecuteNonQuery** are just extensions of original methods of Database class, but now accepting new parameters. The first one  returns the first column of the first row in the result set returned by a query, and the last one returns the numbers of rows affected by the query.
-
 The **Get\<T>** method returns a single object filled with data from database. The **List\<T>** method returns a list of objects.
+
+The **ExecuteScalar** and **ExecuteNonQuery** are just extensions of original methods of Database class, but now accepting new parameters. The first one  returns the first column of the first row in the result set returned by a query, and the last one returns the numbers of rows affected by the query.
 
 ## Get method
 Use this method to fill a single object from database. To do so, the fields of the result set returned by the query need to have the same name of properties of the object that you want to fill (not case sensitive). Properties and fields with different names are ignored.  
@@ -121,7 +121,7 @@ return db.Get<ExampleClass>(CommandType.Text, query, parameters, "Clients.FirstN
 ```
 If you don't inform any key, all items read from database will be added to the list. Sometimes it is ok, sometimes it is not. I recommend you to inform the keys always as possible. 
 
-You can also nest a list inside another list, like nested objects.  
+Like nested objects, you can also nest a list inside another list.    
 The classes:
 ```c#
 public class School
@@ -160,3 +160,46 @@ return db.Get<Order>(CommandType.Text, query, parameters, "Students.Id", "Studen
 You can use nested objects and nested lists at the same time.
 
 ## List method
+Use just like **Get\<T>** method, but like nested lists, you can inform the properties used as keys.
+The class:
+```c#
+public class Order
+{
+  public int Id { get; set; }
+  public string ClientName { get; set; }
+  public DateTime DeliveryDate { get; set; }
+  public decimal Freight { get; set; }
+  public decimal ProductsValue { get; set; }
+}
+```
+The code:
+```c#
+var db = new DatabaseProviderFactory().Create("DbConnection"); //create a new Database object
+
+var query = "select OrderNumber as Id, ClientName, DtDelivery as DeliveryDate, Freight from Order";
+
+return db.List<Order>(CommandType.Text, query, null, "Id"); //no parameters
+```
+The property `Id` will be used as key to fill the list of orders.
+
+## ExecuteScalar and ExecuteNonQuery
+As said before, **ExecuteScalar** and **ExecuteNonQuery** are just extensions of original methods of Database class, but now accepting new parameters. The first one  returns the first column of the first row in the result set returned by a query, and the last one returns the numbers of rows affected by the query.
+```c#
+var db = new DatabaseProviderFactory().Create("DbConnection"); //create a new Database object
+
+var query = "select count(Id) from Order";
+
+return (int)db.ExecuteScalar(CommandType.Text, query, null); //no parameters
+```
+```c#
+var db = new DatabaseProviderFactory().Create("DbConnection"); //create a new Database object
+
+var query = "update Student set (firstName, lastName) = (@firstName, @lastName) where id = @id";
+
+var parameters = List<Parameter>();
+parameters.Add(new Parameter("@id", DbType.Int32, id));
+parameters.Add(new Parameter("@firstName", DbType.String, firstName));
+parameters.Add(new Parameter("@lastName", DbType.String, lastName));
+
+return db.ExecuteNonQuery(CommandType.Text, query, null, "Id"); //no parameters
+```
