@@ -1,5 +1,5 @@
 # DataMapper
-A object mapper for .NET. It is a extension for Database class of Enterprise Library Data Block.
+A easy-to-use and powerfull object mapper for .NET. It is a extension for [Database] (https://msdn.microsoft.com/en-us/library/microsoft.practices.enterpriselibrary.data.database(v=pandp.60).aspx) class of [Enterprise Library Data Access Application Block] (https://www.nuget.org/packages/EnterpriseLibrary.Data).
 
 ## Overview
 With these extensions methods, you can fill your objects directly from database.
@@ -254,7 +254,7 @@ var db = new DatabaseProviderFactory().Create("DbConnection"); //create a new Da
 
 var query = "select count(Id) from Order";
 
-return (int)db.ExecuteScalar(CommandType.Text, query, null); //no parameters
+return (int)db.ExecuteScalar(CommandType.Text, query, null); //no parameters -- returns the value of 'count(Id)'
 ```
 ```c#
 var db = new DatabaseProviderFactory().Create("DbConnection"); //create a new Database object
@@ -266,5 +266,5 @@ parameters.Add(new Parameter("@id", DbType.Int32, id));
 parameters.Add(new Parameter("@firstName", DbType.String, firstName));
 parameters.Add(new Parameter("@lastName", DbType.String, lastName));
 
-return db.ExecuteNonQuery(CommandType.Text, query, parameters);
+return db.ExecuteNonQuery(CommandType.Text, query, parameters); //returns 1
 ```
