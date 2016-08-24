@@ -201,5 +201,5 @@ parameters.Add(new Parameter("@id", DbType.Int32, id));
 parameters.Add(new Parameter("@firstName", DbType.String, firstName));
 parameters.Add(new Parameter("@lastName", DbType.String, lastName));
 
-return db.ExecuteNonQuery(CommandType.Text, query, null, "Id"); //no parameters
+return db.ExecuteNonQuery(CommandType.Text, query, parameters, "Id"); //no parameters
 ```
