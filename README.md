@@ -121,6 +121,42 @@ return db.Get<ExampleClass>(CommandType.Text, query, parameters, "Clients.FirstN
 ```
 If you don't inform any key, all items read from database will be added to the list. Sometimes it is ok, sometimes it is not. I recommend you to inform the keys always as possible. 
 
-You can nest a list inside another list [...]
+You can also nest a list inside another list, like nested objects.  
+The classes:
+```c#
+public class School
+{
+  public int Id { get; set; }
+  public string Name { get; set; }
+  public List<Student> Students { get; set; }
+}
+
+public class Student
+{
+  public int Id { get; set; }
+  public string Name { get; set; }
+  public List<Class> Classes { get; set; }
+}
+
+public class Student
+{
+  public int Id { get; set; }
+  public string Name { get; set; }
+}
+
+```
+The code:
+```c#
+var db = new DatabaseProviderFactory().Create("DbConnection"); //create a new Database object
+
+var query = @"select sc.Id, sc.Name, st.Id ""Students.Id"", st.Name ""Students.Name"", c.Id ""Students.Classes.Id"", c.Name ""Students.Classes.Name"" from School sc inner join Students st on sc.Id = st.SchoolId inner join Class c on c.Id = st.ClassId  where sc.Id = @SchoolId";
+
+var parameters = List<Parameter>();
+parameters.Add(new Parameter("@SchoolId", DbType.Int32, schoolId));
+
+return db.Get<Order>(CommandType.Text, query, parameters, "Students.Id", "Students.Classes.Id");
+```
+
+You can use nested objects and nested lists at the same time.
 
 ## List method
