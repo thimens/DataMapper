@@ -143,7 +143,6 @@ public class Student
   public int Id { get; set; }
   public string Name { get; set; }
 }
-
 ```
 The code:
 ```c#
@@ -181,6 +180,42 @@ var query = "select OrderNumber as Id, ClientName, DtDelivery as DeliveryDate, F
 return db.List<Order>(CommandType.Text, query, null, "Id"); //no parameters
 ```
 The property `Id` will be used as key to fill the list of orders.
+
+## Special conversions
+There are two special conversions that you can use:
+1.You can fill a enum property in your class from a string column of database, if your enum values have the `DefaultValue` attribute on them.  
+For example, if you have the following values on status column of a subscription table: "P" (Paused), "A" (Active), "I" (Idle)
+The class:
+```c#
+public class Subscription
+{
+  public int Id { get; set; }
+  public string ClientName { get; set; }
+  public Status Status { get; set; }
+}
+
+public enum Status
+{
+  [DefaultValue("P")] Paused,
+  [DefaultValue("A")] Active,
+  [DefaultValue("I")] Idle
+}
+```
+The code:
+```c#
+var db = new DatabaseProviderFactory().Create("DbConnection"); //create a new Database object
+
+var query = @"select Id, ClientName, Status from Subscription where id = @id";
+
+var parameters = List<Parameter>();
+parameters.Add(new Parameter("@id", DbType.Int32, id));
+
+return db.Get<Subscription>(CommandType.Text, query, parameters);
+```
+
+2.You can fill a bool property in your class from a string column of database, if this column is a 'Y' - 'N' field.  
+
+
 
 ## ExecuteScalar and ExecuteNonQuery
 As said before, **ExecuteScalar** and **ExecuteNonQuery** are just extensions of original methods of Database class, but now accepting new parameters. The first one  returns the first column of the first row in the result set returned by a query, and the last one returns the numbers of rows affected by the query.
