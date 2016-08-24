@@ -121,6 +121,6 @@ return db.Get<ExampleClass>(CommandType.Text, query, parameters, "Clients.FirstN
 ```
 If you don't inform any key, all items read from database will be added to the list. Sometimes it is ok, sometimes it is not. I recommend you to inform the keys always as possible. 
 
-You can nest a list in another list [...]
+You can nest a list inside another list [...]
 
 ## List method
