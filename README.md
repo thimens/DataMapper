@@ -149,7 +149,7 @@ The code:
 ```c#
 var db = new DatabaseProviderFactory().Create("DbConnection"); //create a new Database object
 
-var query = @"select sc.Id, sc.Name, st.Id ""Students.Id"", st.Name ""Students.Name"", c.Id ""Students.Classes.Id"", c.Name ""Students.Classes.Name"" from School sc inner join Students st on sc.Id = st.SchoolId inner join Class c on c.Id = st.ClassId  where sc.Id = @SchoolId";
+var query = @"select sc.Id, sc.Name, st.Id ""Students.Id"", st.Name ""Students.Name"", c.Id ""Students.Classes.Id"", c.Name ""Students.Classes.Name"" from School sc inner join Students st on sc.Id = st.SchoolId inner join StudentClass c on c.StudentId = st.Id  where sc.Id = @SchoolId";
 
 var parameters = List<Parameter>();
 parameters.Add(new Parameter("@SchoolId", DbType.Int32, schoolId));
