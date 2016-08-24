@@ -2,8 +2,8 @@
 A object mapper for .NET. It extends Database class of Enterprise Library Data Block.
 
 ## Overview
-With these extensions, you can fill your classes directly from database.
-There are these four methods:
+With these extensions methods, you can fill your classes directly from database.
+There are:
  * ExecuteScalar
  * ExecuteNonQuery
  * Get\<T>
