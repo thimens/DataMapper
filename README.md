@@ -1,13 +1,13 @@
 # DataMapper
-A object mapper for .NET. It extends Database class of Enterprise Library Data Block.
+A object mapper for .NET. It is a extension for Database class of Enterprise Library Data Block.
 
 ## Overview
-With these extensions methods, you can fill your classes directly from database.
-There are:
- * ExecuteScalar
- * ExecuteNonQuery
+With these extensions methods, you can fill your objects directly from database.
+They are:
  * Get\<T>
  * List\<T>
+ * ExecuteScalar
+ * ExecuteNonQuery
 
 The **Get\<T>** method returns a single object filled with data from database. The **List\<T>** method returns a list of objects.
 
@@ -40,7 +40,7 @@ parameters.Add(new Parameter("@OrderNumber", DbType.Int32, orderNumber));
 
 return db.Get<Order>(CommandType.Text, query, parameters);
 ```
-And voilá! Your `Order` class with Id, DeliveryDate and Freight filled from database.
+And voilá! Your `Order` class with `Id`, `DeliveryDate` and `Freight` properties filled from database.
 
 ### Nested objects
 The classes:
@@ -85,7 +85,7 @@ Or:
 `@"select c.AddrZip as ""Order.Client.Address.Zip"" from Order o inner join Client c on o.ClientId = c.Id where o.OrderNumber = @OrderNumber"`
 
 ### Nested Lists
-Pretty much like nested objects. With nested lists, you have the option to inform the property(ies) that will be used as key(s) to fill the list (like a single or composite primary key in a database table).
+Pretty much like nested objects. With nested lists, you have the option to inform the property(ies) that will be used as key to fill the list (like a single or composite primary key in a database table).
 
 The classes:
 ```c#
@@ -138,7 +138,7 @@ public class Student
   public List<Class> Classes { get; set; }
 }
 
-public class Student
+public class Class
 {
   public int Id { get; set; }
   public string Name { get; set; }
@@ -155,11 +155,42 @@ parameters.Add(new Parameter("@SchoolId", DbType.Int32, schoolId));
 
 return db.Get<Order>(CommandType.Text, query, parameters, "Students.Id", "Students.Classes.Id");
 ```
+The `Classes` list of a student will be filled only with classes of that specific student.
 
-You can use nested objects and nested lists at the same time.
+You can use nested objects and nested lists at the same time without any problem.
+
+#### Special case for list key
+In some rare cases, you may have a key for a list that is not a property of the list item, but a property of a property of the item. In these cases, you can inform this type of key with `@` sign. For example, the key `"Volumes.Sector@Id"` means: the property `Id` of property `Sector` of each volume in `Volumes` list will be used as key. The classes hierarchy that describe this case is:
+```c#
+public class MainClass
+{
+  public List<Volume> Volumes { get; set; }
+}
+
+public class Volume
+{
+  public decimal Weight { get; set; }
+  public Sector Sector { get; set; }
+}
+
+public class Sector
+{
+  public int Id { get; set; }
+  public string Name { get; set; }
+}
+```
+And code:
+```c#
+return db.Get<MainClass>(CommandType.Text, query, parameters, "Volumes.Sector@Id"); //returns a object MainClass with a list of volumes inside it
+```
+Or:
+```c#
+return db.List<Volume>(CommandType.Text, query, parameters, "Sector@Id"); //returns directly a list of volumes
+```
+Therefore, when filling the `Volumes` list, the property `Id` of property `Sector` will be checked to validate if the item is already in the list. 
 
 ## List method
-Use just like **Get\<T>** method, but like nested lists, you can inform the properties used as keys.
+Use just like **Get\<T>** method, but like nested lists, you can inform the properties used as key.
 The class:
 ```c#
 public class Order
@@ -183,7 +214,7 @@ The property `Id` will be used as key to fill the list of orders.
 
 ## Special conversions
 There are two special conversions that you can use:
-1.You can fill a enum property of your class from a string column of database, if your enum values have the `DefaultValue` attribute on them.  
+1.You can fill a enum property of your object from a string column of database, if your enum values have the `DefaultValue` attribute on them.  
 For example, if you have the following values on `Status` column of a `Subscription` table: `"P"` (Paused), `"A"` (Active), `"I"` (Idle)  
 The class:
 ```c#
@@ -212,7 +243,7 @@ parameters.Add(new Parameter("@id", DbType.Int32, id));
 
 return db.Get<Subscription>(CommandType.Text, query, parameters);
 ```
-2.You can fill a bool property of your class from a string column, if this column has `"Y" - "N"` values.  
+2.You can fill a bool property of your object from a string column, if this column has `"Y" - "N"` values.  
 
 
 
