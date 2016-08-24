@@ -85,3 +85,40 @@ Or:
 `@"select c.AddrZip as ""Order.Client.Address.Zip"" from Order o inner join Client c on o.ClientId = c.Id where o.OrderNumber = @OrderNumber"`
 
 ### Nested Lists
+Pretty much like nested objects. With nested lists, you have the option to inform the property(ies) that will be used as key(s) to fill the list (like a single or composite primary key in a database table).
+
+The classes:
+```c#
+public class Order
+{
+  public int Id { get; set; }
+  public string ClientName { get; set; }
+  public decimal Freight { get; set; }
+  public List<Product> Products { get; set; }
+}
+
+public class Product
+{
+  public int Id { get; set; }
+  public int Quantity { get; set; }
+  public string Name { get; set; }
+}
+```
+The code:
+```c#
+var db = new DatabaseProviderFactory().Create("DbConnection"); //create a new Database object
+
+var query = @"select o.OrderNumber as Id, o.ClientName, p.Id as ""Products.Id"", p.Quantity as ""Products.Quantity"", p.Name as ""Products.Name"" from Order o inner join OrderProduct p on o.OrderNumber = p.OrderNumber where o.OrderNumber = @OrderNumber";
+
+var parameters = List<Parameter>();
+parameters.Add(new Parameter("@OrderNumber", DbType.Int32, orderNumber));
+
+return db.Get<Order>(CommandType.Text, query, parameters, "Products.Id");
+```
+The last parameter `"Products.Id"` of **Get\<T>** method means: For `Products` list, use property `Id` as key. If a item read from database has a key that already exists in the list, this item is ignored. You can inform as properties as necessary. For example, if you have a list of `Clients`, and the keys of list are the properties `FirstName` and `LastName`, you must make a call like this:
+```c#
+return db.Get<ExampleClass>(CommandType.Text, query, parameters, "Clients.FirstName", "Clients.LastName");
+```
+If you don't inform any key, all items read from database will be added to the list. Sometimes it is ok, sometimes it is not. I recommend you to inform the keys always as possible. 
+
+## List method
