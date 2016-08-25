@@ -185,7 +185,7 @@ return db.Get<MainClass>(CommandType.Text, query, parameters, "Volumes.Sector@Id
 ```
 Or:
 ```c#
-return db.List<Volume>(CommandType.Text, query, parameters, "Sector@Id"); //returns directly a list of volumes
+return db.List<Volume>(CommandType.Text, query, parameters, "Sector@Id"); //returns a list of volumes directly
 ```
 Therefore, when filling the `Volumes` list, the property `Id` of property `Sector` will be checked to validate if the item is already in the list. 
 
