@@ -303,7 +303,10 @@ namespace Thimens.DataMapper
                                 //is list
                                 if (typeof(IEnumerable).IsAssignableFrom(property.PropertyType) && property.PropertyType != typeof(string))
                                 {
-                                    dynamic dynList = property.GetValue(objectToFill, null) ?? (property.PropertyType.IsArray ? Array.CreateInstance(property.PropertyType.GetElementType(), 0) : Activator.CreateInstance(property.PropertyType));
+                                    if (property.PropertyType.IsInterface && !property.PropertyType.IsAssignableFrom(typeof(List<>).MakeGenericType(property.PropertyType.GetGenericArguments())))
+                                            throw new ApplicationException($"Could not resolve property {property.Name} of type {property.PropertyType.Name}. The property must be instantiable or assingnabe from a List<T>");
+
+                                    dynamic dynList = property.GetValue(objectToFill, null) ?? (property.PropertyType.IsArray ? Array.CreateInstance(property.PropertyType.GetElementType(), 0) : property.PropertyType.IsInterface ? Activator.CreateInstance(typeof(List<>).MakeGenericType(property.PropertyType.GetGenericArguments())) : Activator.CreateInstance(property.PropertyType));
                                     var list = Enumerable.ToList(dynList);
 
                                     Func<Database, IDataReader, string[], string, IList<string>, string> metodo = GetObjectFromDataReader<string>;
