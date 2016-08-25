@@ -14,7 +14,7 @@ The **Get\<T>** method returns a single object filled with data from database. T
 The **ExecuteScalar** and **ExecuteNonQuery** are just extensions of original methods of Database class, but now accepting new parameters. The first one  returns the first column of the first row in the result set returned by a query, and the last one returns the numbers of rows affected by the query.
 
 ## Get method
-Use this method to fill a single object from database. To do so, the fields of the result set returned by the query need to have the same name of properties of the object that you want to fill (not case sensitive). Properties and fields with different names are ignored.  
+Use this method to fill a single object from database. To do so, the columns of the result set returned by the query need to have the same name of properties of the object that you want to fill (not case sensitive). Properties and fields with different names are ignored.  
 You can use the **Parameter** class to add parameters to your query. If it is not necessary, just use *null* in the call.
 
 ### Basic usage
