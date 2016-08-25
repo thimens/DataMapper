@@ -1,5 +1,5 @@
 # DataMapper
-A easy-to-use and powerfull object mapper for .NET. It is a extension for [Database] (https://msdn.microsoft.com/en-us/library/microsoft.practices.enterpriselibrary.data.database(v=pandp.60).aspx) class of [Enterprise Library Data Access Application Block] (https://www.nuget.org/packages/EnterpriseLibrary.Data).
+A easy-to-use and powerfull object mapper for .NET. It is a extension for [Database] (https://msdn.microsoft.com/en-us/library/microsoft.practices.enterpriselibrary.data.database(v=pandp.60).aspx) class of [Enterprise Library Data Access Application Block] (https://www.nuget.org/packages/EnterpriseLibrary.Data).  
 Go to the database once with a simple (or complex, it is up to you) query and have your objects (lists included!), and their nested objects, and their nested objects, and... (again, you're the boss! you decide when stop it) filled with sweet and freshly read data. 
 ## Overview
 With these extensions methods, you can fill your objects directly from database.
@@ -14,7 +14,7 @@ The **Get\<T>** method returns a single object filled with data from database. T
 The **ExecuteScalar** and **ExecuteNonQuery** are just extensions of original methods of Database class, but now accepting new parameters. The first one  returns the first column of the first row in the result set returned by a query, and the last one returns the numbers of rows affected by the query.
 
 ## Get method
-Use this method to fill a single object from database. To do so, the columns of the result set returned by the query need to have the same name of properties of the object that you want to fill (not case sensitive). Properties and fields with different names are ignored.  
+Use this method to fill a single object from database. To do so, the columns of the result set returned by the query need to have the same name of properties of the object that you want to fill (not case sensitive). Properties and columns with different names are ignored.  
 You can use the **Parameter** class to add parameters to your query. If it is not necessary, just use *null* in the call.
 
 ### Basic usage
