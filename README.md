@@ -1,6 +1,6 @@
 # DataMapper
 A easy-to-use and powerfull object mapper for .NET. It is a extension for [Database] (https://msdn.microsoft.com/en-us/library/microsoft.practices.enterpriselibrary.data.database(v=pandp.60).aspx) class of [Enterprise Library Data Access Application Block] (https://www.nuget.org/packages/EnterpriseLibrary.Data).
-
+Go to the database once with a simple (or complex, it is up to you) query and have your objects (lists included!), and their nested objects, and their nested objects, and... (again, you're the boss! you decide when stop it) filled with sweet and freshly read data. 
 ## Overview
 With these extensions methods, you can fill your objects directly from database.
 They are:
