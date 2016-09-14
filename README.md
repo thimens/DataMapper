@@ -40,7 +40,7 @@ parameters.Add(new Parameter("@OrderNumber", DbType.Int32, orderNumber));
 
 return db.Get<Order>(CommandType.Text, query, parameters);
 ```
-And voilá! Your `Order` class with `Id`, `DeliveryDate` and `Freight` properties filled from database.
+And voilá! Your `Order` class with `Id`, `ClientName`, `DeliveryDate` and `Freight` properties filled from database.
 
 ### Nested objects
 The classes:
@@ -213,7 +213,7 @@ return db.List<Order>(CommandType.Text, query, null, "Id"); //no parameters
 The property `Id` will be used as key to fill the list of orders.
 
 ## Special conversions
-There are two special conversions that you can use:
+There are two special conversions that you can use:  
 1.You can fill a enum property of your object from a string column of database, if your enum values have the `DefaultValue` attribute on them.  
 For example, if you have the following values on `Status` column of a `Subscription` table: `"P"` (Paused), `"A"` (Active), `"I"` (Idle)  
 The class:
