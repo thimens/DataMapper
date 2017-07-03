@@ -119,7 +119,7 @@ The last parameter `"Products.Id"` of **Get\<T>** method means: For `Products` l
 ```c#
 return db.Get<ExampleClass>(CommandType.Text, query, parameters, "Clients.FirstName", "Clients.LastName");
 ```
-If you don't inform any key, all items read from database will be added to the list. Sometimes it is ok, sometimes it is not. I recommend you to inform the keys always as possible. 
+If you don't inform any key, all items read from database will be added to the list. Sometimes it is ok, sometimes it is not. I recommend you to inform the keys whenever possible. 
 
 Like nested objects, you can also nest a list inside another list.    
 The classes:
