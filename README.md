@@ -27,12 +27,13 @@ You can use the **Parameter** class to add parameters to your query. If it is no
 The first step is register your [DbProviderFactory](https://docs.microsoft.com/en-us/dotnet/api/system.data.common.dbproviderfactory?view=netstandard-2.0):
 ```c#
 DatabaseProviderFactory.RegisterFactory(SqlClientFactory.Instance);
-DatabaseProviderFactory.RegisterFactory(SqlClientFactory.Instance, "SQL");
+DatabaseProviderFactory.RegisterFactory(SqlClientFactory.Instance, "SQL"); //factory alias
 ```
 Then create the Database object:
 ```c#
-var db = DatabaseProviderFactory.Create(connectionString, typeof(SqlClientFactory));
-var db = DatabaseProviderFactory.Create(connectionString, "SQL");
+//if no alias was informed, you can use factory type name or factory type. otherwise, you must use the alias.
+var db = DatabaseProviderFactory.Create(connectionString, typeof(SqlClientFactory)); 
+var db = DatabaseProviderFactory.Create(connectionString, "SQL"); //using factory alias.
 ```
 
 The class:
