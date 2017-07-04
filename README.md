@@ -272,7 +272,7 @@ return db.Get<Subscription>(CommandType.Text, query, parameters);
 
 
 ## ExecuteScalar and ExecuteNonQuery
-As said before, **ExecuteScalar** and **ExecuteNonQuery** are just extensions of original methods of Database class, but now accepting new parameters. The first one  returns the first column of the first row in the result set returned by a query, and the last one returns the numbers of rows affected by the query.
+As mentioned, **ExecuteScalar** and **ExecuteNonQuery** are just extensions of original methods of Database class, but now accepting new parameters. The first one  returns the first column of the first row in the result set returned by a query, and the last one returns the numbers of rows affected by the query.
 ```c#
 DatabaseProviderFactory.RegisterFactory(SqlClientFactory.Instance, "SQL");
 var db = DatabaseProviderFactory.Create(connectionString, "SQL"); //create a new Database object from connection string and factory alias
