@@ -10,6 +10,11 @@
     <AssemblyVersion>2.0.0.0</AssemblyVersion>
     <FileVersion>2.0.0.0</FileVersion>
     <Version>2.0.0</Version>
+    <PackageLicenseUrl>https://opensource.org/licenses/MS-PL</PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/thimens/DataMapper/</PackageProjectUrl>
+    <RepositoryUrl>https://opensource.org/licenses/MS-PL</RepositoryUrl>
+    <PackageTags>micro-orm, orm, datamapper, data mapper, object mapper</PackageTags>
+    <RepositoryType>GIT</RepositoryType>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
