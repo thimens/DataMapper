@@ -1,8 +1,10 @@
 # DataMapper
-A easy-to-use and powerfull object mapper for .NET. It is a extension for [Database] (https://msdn.microsoft.com/en-us/library/microsoft.practices.enterpriselibrary.data.database(v=pandp.60).aspx) class of [Enterprise Library Data Access Application Block] (https://www.nuget.org/packages/EnterpriseLibrary.Data).  
-Go to the database once with a simple (or complex, it is up to you) query and have your objects (lists included!), and their nested objects, and their nested objects, and... (again, you're the boss! you decide when stop it) filled with sweet and freshly read data. 
+A easy-to-use and powerfull object mapper for .NET. Nugget package [here]()
+Go to the database once with a simple (or complex, it is up to you) query and have your objects (lists included!), and their nested objects, and their nested objects, and... (again, you're the boss! you decide when stop it) filled with sweet and freshly read data.
+It's been build over a modified code of the Database class (and few more classes) of [Enterprise Library Data Access Application Block](https://msdn.microsoft.com/en-us/library/microsoft.practices.enterpriselibrary.data.database(v=pandp.60).aspx) to run over .NET Standard 2.0.
+
 ## Overview
-With these extensions methods, you can fill your objects directly from database.
+With these methods, you can fill your objects directly from database.
 They are:
  * Get\<T>
  * List\<T>
@@ -11,13 +13,24 @@ They are:
 
 The **Get\<T>** method returns a single object filled with data from database. The **List\<T>** method returns a list of objects.
 
-The **ExecuteScalar** and **ExecuteNonQuery** are just extensions of original methods of Database class, but now accepting new parameters. The first one  returns the first column of the first row in the result set returned by a query, and the last one returns the numbers of rows affected by the query.
+The **ExecuteScalar** and **ExecuteNonQuery** are just extensions of original methods of IDbCommand, but now accepting new parameters. The first one  returns the first column of the first row in the result set returned by a query, and the last one returns the numbers of rows affected by the query.
 
 ## Get\<T> method
-Use this method to fill a single object from database. To do so, the columns of the result set returned by the query need to have the same name of properties of the object that you want to fill (not case sensitive). Properties and columns with different names are ignored.  
+Use this method to fill a single object from database. To do so, the columns name of the result set must match the properties name of the object that you want to fill (case-insensitive). Properties and columns with different names are ignored.  
 You can use the **Parameter** class to add parameters to your query. If it is not necessary, just use *null* in the call.
 
 ### Basic usage
+The first step is register your [DbProviderFactory](https://docs.microsoft.com/en-us/dotnet/api/system.data.common.dbproviderfactory?view=netstandard-2.0):
+```c#
+DatabaseProviderFactory.RegisterFactory(SqlClientFactory.Instance);
+DatabaseProviderFactory.RegisterFactory(SqlClientFactory.Instance, "SQL");
+```
+Then create the Database object:
+```c#
+var db = DatabaseProviderFactory.Create(connectionString, typeof(SqlClientFactory));
+var db = DatabaseProviderFactory.Create(connectionString, "SQL");
+```
+
 The class:
 ```c#
 public class Order
@@ -31,7 +44,8 @@ public class Order
 ```
 The code:
 ```c#
-var db = new DatabaseProviderFactory().Create("DbConnection"); //create a new Database object from 'DbConnection' connection string
+DatabaseProviderFactory.RegisterFactory(SqlClientFactory.Instance, "SQL");
+var db = DatabaseProviderFactory.Create(connectionString, "SQL"); //create a new Database object from connection string and factory alias
 
 var query = "select OrderNumber as Id, ClientName, DtDelivery as DeliveryDate, Freight from Order where OrderNumber = @OrderNumber";
 
@@ -67,7 +81,8 @@ public class Address
 ```
 The code:
 ```c#
-var db = new DatabaseProviderFactory().Create("DbConnection"); //create a new Database object from 'DbConnection' connection string
+DatabaseProviderFactory.RegisterFactory(SqlClientFactory.Instance, "SQL");
+var db = DatabaseProviderFactory.Create(connectionString, "SQL"); //create a new Database object from connection string and factory alias
 
 var query = @"select OrderNumber as Id, ClientName, Street as ""Address.Street"", Number as ""Address.Number"", zip as ""Address.Zip""
 from Order where OrderNumber = @OrderNumber";
@@ -106,7 +121,8 @@ public class Product
 ```
 The code:
 ```c#
-var db = new DatabaseProviderFactory().Create("DbConnection"); //create a new Database object from 'DbConnection' connection string
+DatabaseProviderFactory.RegisterFactory(SqlClientFactory.Instance, "SQL");
+var db = DatabaseProviderFactory.Create(connectionString, "SQL"); //create a new Database object from connection string and factory alias
 
 var query = @"select o.OrderNumber as Id, o.ClientName, p.Id as ""Products.Id"", p.Quantity as ""Products.Quantity"", p.Name as ""Products.Name"" from Order o inner join OrderProduct p on o.OrderNumber = p.OrderNumber where o.OrderNumber = @OrderNumber";
 
@@ -115,7 +131,7 @@ parameters.Add(new Parameter("@OrderNumber", DbType.Int32, orderNumber));
 
 return db.Get<Order>(CommandType.Text, query, parameters, "Products.Id");
 ```
-The last parameter `"Products.Id"` of **Get\<T>** method means: For `Products` list, use property `Id` as key. You can inform as properties as necessary. For example, if you have a list of `Clients`, and the keys of list are the properties `FirstName` and `LastName`, you must make a call like this:
+The last parameter `"Products.Id"` of **Get\<T>** method means: For `Products` list, use property `Id` as key. You can inform as properties as necessary. For example, if you have a list of `Clients`, and the keys of list are the properties `FirstName` and `LastName`, you must do a call like this:
 ```c#
 return db.Get<ExampleClass>(CommandType.Text, query, parameters, "Clients.FirstName", "Clients.LastName");
 ```
@@ -146,7 +162,8 @@ public class Class
 ```
 The code:
 ```c#
-var db = new DatabaseProviderFactory().Create("DbConnection"); //create a new Database object from 'DbConnection' connection string
+DatabaseProviderFactory.RegisterFactory(SqlClientFactory.Instance, "SQL");
+var db = DatabaseProviderFactory.Create(connectionString, "SQL"); //create a new Database object from connection string and factory alias
 
 var query = @"select sc.Id, sc.Name, st.Id ""Students.Id"", st.Name ""Students.Name"", c.Id ""Students.Classes.Id"", c.Name ""Students.Classes.Name"" from School sc inner join Students st on sc.Id = st.SchoolId inner join StudentClass c on c.StudentId = st.Id  where sc.Id = @SchoolId";
 
@@ -204,7 +221,8 @@ public class Order
 ```
 The code:
 ```c#
-var db = new DatabaseProviderFactory().Create("DbConnection"); //create a new Database object from 'DbConnection' connection string
+DatabaseProviderFactory.RegisterFactory(SqlClientFactory.Instance, "SQL");
+var db = DatabaseProviderFactory.Create(connectionString, "SQL"); //create a new Database object from connection string and factory alias
 
 var query = "select OrderNumber as Id, ClientName, DtDelivery as DeliveryDate, Freight from Order";
 
@@ -234,7 +252,8 @@ public enum Status
 ```
 The code:
 ```c#
-var db = new DatabaseProviderFactory().Create("DbConnection"); //create a new Database object from 'DbConnection' connection string
+DatabaseProviderFactory.RegisterFactory(SqlClientFactory.Instance, "SQL");
+var db = DatabaseProviderFactory.Create(connectionString, "SQL"); //create a new Database object from connection string and factory alias
 
 var query = @"select Id, ClientName, Status from Subscription where id = @id";
 
@@ -250,14 +269,16 @@ return db.Get<Subscription>(CommandType.Text, query, parameters);
 ## ExecuteScalar and ExecuteNonQuery
 As said before, **ExecuteScalar** and **ExecuteNonQuery** are just extensions of original methods of Database class, but now accepting new parameters. The first one  returns the first column of the first row in the result set returned by a query, and the last one returns the numbers of rows affected by the query.
 ```c#
-var db = new DatabaseProviderFactory().Create("DbConnection"); //create a new Database object from 'DbConnection' connection string
+DatabaseProviderFactory.RegisterFactory(SqlClientFactory.Instance, "SQL");
+var db = DatabaseProviderFactory.Create(connectionString, "SQL"); //create a new Database object from connection string and factory alias
 
 var query = "select count(Id) from Order";
 
 return (int)db.ExecuteScalar(CommandType.Text, query, null); //no parameters -- returns the value of 'count(Id)'
 ```
 ```c#
-var db = new DatabaseProviderFactory().Create("DbConnection"); //create a new Database object from 'DbConnection' connection string
+DatabaseProviderFactory.RegisterFactory(SqlClientFactory.Instance, "SQL");
+var db = DatabaseProviderFactory.Create(connectionString, "SQL"); //create a new Database object from connection string and factory alias
 
 var query = "update Student set (firstName, lastName) = (@firstName, @lastName) where id = @id";
 
