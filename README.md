@@ -4,7 +4,7 @@ A easy-to-use and powerfull object mapper for .NET.
 Go to the database once with a simple (or complex, it is up to you) query and have your objects (lists included!), and their nested objects, and their nested objects, and... (again, you're the boss! you decide when stop it) filled with sweet and freshly read data.
 It's been build over a modified code of the Database class (and few more classes) of [Enterprise Library Data Access Application Block](https://msdn.microsoft.com/en-us/library/microsoft.practices.enterpriselibrary.data.database(v=pandp.60).aspx) to run over .NET Standard 2.0.
 
-Nugget package [here]() (awaiting .NET Standard 2.0 became stable to publish)
+Nugget package [here](https://www.nuget.org/packages/Thimens.DataMapper)
 
 
 ## Overview
