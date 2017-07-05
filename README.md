@@ -1,7 +1,7 @@
 # DataMapper
 A easy-to-use and powerfull object mapper for .NET. 
 
-Nugget package [here](https://www.nuget.org/packages/Thimens.DataMapper)
+Nugget package [here](https://www.nuget.org/packages/Thimens.DataMapper).
 
 No extra coding necessary. Just match the fields name of your query (or procedure) with the properties tree of your class, and, if you're using lists, inform their key(s). And that's it! Sweet freshly read data mapped directly to your class.
 
