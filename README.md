@@ -19,7 +19,7 @@ Use this method to fill a single object from database. To do so, the columns nam
 You can use the **Parameter** class to add parameters to your query. If it is not necessary, just use *null* in the call.
 
 ### Basic usage
-The first step is register your [DbProviderFactory](https://docs.microsoft.com/en-us/dotnet/api/system.data.common.dbproviderfactory?view=netstandard-2.0):
+The first step is register your [factories](https://docs.microsoft.com/en-us/dotnet/api/system.data.common.dbproviderfactory?view=netstandard-2.0):
 ```c#
 DatabaseProviderFactory.RegisterFactory(SqlClientFactory.Instance);
 DatabaseProviderFactory.RegisterFactory(SqlClientFactory.Instance, "SQL"); //factory alias
