@@ -138,6 +138,7 @@ return db.Get<ExampleClass>(CommandType.Text, query, parameters, "Clients.FirstN
 If you don't inform any key, each row read from database will be added as a new item to the list. Sometimes it is ok, sometimes it is not. I recommend you to inform the keys whenever possible. 
 
 Like nested objects, you can also nest a list inside another list.    
+
 The classes:
 ```c#
 public class School
@@ -177,7 +178,7 @@ The `Classes` list of a student will be filled only with classes of that specifi
 You can use nested objects and nested lists at the same time without any problem.
 
 #### Special case for list key
-In some rare cases, you may have a key for a list that is not a property of the list item, but a property of a property of the item. In these cases, you can inform this type of key with `@` sign. For example, the key `"Volumes.Sector@Id"` means: the property `Id` of property `Sector` of each volume in `Volumes` list will be used as key. The classes hierarchy that describe this case is:
+In some rare cases, you may have a key for a list that is not a property of the list item, but a property of a nested property of the item. In these cases, you can inform this type of key with `@` sign. For example, the key `"Volumes.Sector@Id"` means: the property `Id` of property `Sector` of each volume in `Volumes` list will be used as key. The classes hierarchy that describe this case is:
 ```c#
 public class MainClass
 {
@@ -196,7 +197,7 @@ public class Sector
   public string Name { get; set; }
 }
 ```
-And code:
+And the code:
 ```c#
 return db.Get<MainClass>(CommandType.Text, query, parameters, "Volumes.Sector@Id"); //returns a object MainClass with a list of volumes inside it
 ```
@@ -233,8 +234,10 @@ The property `Id` will be used as key to fill the list of orders.
 
 ## Special conversions
 There are two special conversions that you can use:  
+
 1.You can fill a enum property of your object from a string column of database, if your enum values have the `DefaultValue` attribute on them.  
-For example, if you have the following values on `Status` column of a `Subscription` table: `"P"` (Paused), `"A"` (Active), `"I"` (Idle)  
+For example, if you have the following values on `Status` column of the `Subscription` table: `"P"` (Paused), `"A"` (Active), `"I"` (Idle):  
+
 The class:
 ```c#
 public class Subscription
@@ -263,7 +266,8 @@ parameters.Add(new Parameter("@id", DbType.Int32, id));
 
 return db.Get<Subscription>(CommandType.Text, query, parameters);
 ```
-2.You can fill a bool property of your object from a string column, if this column has `"Y" - "N"` values.  
+
+2.You can fill a bool property from a string column, if this column has `"Y" - "N"` values.  
 
 
 
