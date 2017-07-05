@@ -1,23 +1,16 @@
 # DataMapper
 A easy-to-use and powerfull object mapper for .NET. 
 
-Go to the database once with a simple (or complex, it is up to you) query and have your objects (lists included!), and their nested objects, and their nested objects, and... (again, you're the boss! you decide when stop it) filled with sweet and freshly read data.
-It's been build over a modified code of the Database class (and few more classes) of [Enterprise Library Data Access Application Block](https://msdn.microsoft.com/en-us/library/microsoft.practices.enterpriselibrary.data.database(v=pandp.60).aspx) to run over .NET Standard 2.0.
-
 Nugget package [here](https://www.nuget.org/packages/Thimens.DataMapper)
 
+No extra coding necessary. Just match the fields name of your query (or procedure) with the properties tree of your class, and, if you're using lists, inform their key(s). And that's it! Sweet freshly read data mapped directly to your class.
+
+The project's been build over a modified code of the Database class (and few more classes) of [Enterprise Library Data Access Application Block](https://msdn.microsoft.com/en-us/library/microsoft.practices.enterpriselibrary.data.database(v=pandp.60).aspx) to run over .NET Standard 2.0.
 
 ## Overview
-With these methods, you can fill your objects directly from database.
-They are:
- * Get\<T>
- * List\<T>
- * ExecuteScalar
- * ExecuteNonQuery
+The **Get\<T>** method returns a single object filled with data from database (nested objects and lists included). The **List\<T>** method returns a list of objects.
 
-The **Get\<T>** method returns a single object filled with data from database. The **List\<T>** method returns a list of objects.
-
-The **ExecuteScalar** and **ExecuteNonQuery** are just extensions of original methods of IDbCommand, but now accepting new parameters. The first one  returns the first column of the first row in the result set returned by a query, and the last one returns the numbers of rows affected by the query.
+The **ExecuteScalar** and **ExecuteNonQuery** are just extensions of original methods of Database class, but now accepting new parameters. The first one  returns the first column of the first row in the result set returned by a query, and the last one returns the numbers of rows affected by the query.
 
 ## Get\<T> method
 Use this method to fill a single object from database. To do so, the columns name of the result set must match the properties name of the object that you want to fill (case-insensitive). Properties and columns with different names are ignored.  
