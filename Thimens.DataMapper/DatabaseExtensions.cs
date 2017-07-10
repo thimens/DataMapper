@@ -33,12 +33,13 @@ namespace Thimens.DataMapper
             using (IDataReader reader = database.ExecuteReader(CreateCommand(database, commandType, query, parameters)))
             {
                 T obj = default(T);
+                var columnNames = GetColumnNames(reader);
 
                 while (reader.Read())
                 {
                     //reference type 
                     if (default(T) == null && typeof(T) != typeof(string))
-                        obj = GetObjectFromDataReader<T>(database, reader, keys, null, list);
+                        obj = GetObjectFromDataReader<T>(reader, columnNames, keys, null, list);
                     //value type
                     else
                         list.Add((T)reader[0]);
@@ -64,12 +65,13 @@ namespace Thimens.DataMapper
             using (IDataReader reader = database.ExecuteReader(CreateCommand(database, commandType, query, parameters)))
             {
                 T obj = default(T);
+                var columnNames = GetColumnNames(reader);
 
                 while (reader.Read())
                 {
                     //reference type 
                     if (default(T) == null && typeof(T) != typeof(string))
-                        obj = GetObjectFromDataReader<T>(database, reader, keys, null, obj);
+                        obj = GetObjectFromDataReader<T>(reader, columnNames, keys, null, obj);
                     //value type
                     else
                         obj = (T)reader[0];
@@ -118,7 +120,7 @@ namespace Thimens.DataMapper
             return command;
         }
 
-        private static T GetObjectFromDataReader<T>(Database database, IDataReader dataReader, string[] keys, string columnNamePrefix, IList<T> listBeingFilled)
+        private static T GetObjectFromDataReader<T>(IDataReader dataReader, IEnumerable<string> columnNames, string[] keys, string columnNamePrefix, IList<T> listBeingFilled)
         {
             T obj = Activator.CreateInstance<T>();
             var isNewObj = false;
@@ -129,9 +131,9 @@ namespace Thimens.DataMapper
                 listBeingFilled = Activator.CreateInstance<IList<T>>();
             }
             else
-                isNewObj = !ValidateKeyProperties<T>(database, dataReader, keys, columnNamePrefix, listBeingFilled, out obj);
+                isNewObj = !ValidateKeyProperties<T>( dataReader, keys, columnNamePrefix, listBeingFilled, out obj);
 
-            CreateObjectWithDataReader<T>(database, dataReader, keys, columnNamePrefix, ref obj);
+            CreateObjectWithDataReader<T>(dataReader, columnNames, keys, columnNamePrefix, ref obj);
 
             if (isNewObj)
                 listBeingFilled.Add(obj);
@@ -139,7 +141,7 @@ namespace Thimens.DataMapper
             return obj;
         }
 
-        private static T GetObjectFromDataReader<T>(Database database, IDataReader dataReader, string[] keys, string columnNamePrefix, T objectBeingFilled)
+        private static T GetObjectFromDataReader<T>(IDataReader dataReader, IEnumerable<string> columnNames, string[] keys, string columnNamePrefix, T objectBeingFilled)
         {
             T obj = Activator.CreateInstance<T>();
             var isNewObj = false;
@@ -147,27 +149,26 @@ namespace Thimens.DataMapper
             if (Comparer.Equals(objectBeingFilled, default(T)))
                 isNewObj = true;
             else
-                isNewObj = !ValidateKeyProperties<T>(database, dataReader, keys, columnNamePrefix, objectBeingFilled, out obj);
+                isNewObj = !ValidateKeyProperties<T>(dataReader, keys, columnNamePrefix, objectBeingFilled, out obj);
 
-            CreateObjectWithDataReader(database, dataReader, keys, columnNamePrefix, ref obj);
+            CreateObjectWithDataReader(dataReader, columnNames, keys, columnNamePrefix, ref obj);
 
             return obj;
         }
 
-        private delegate bool ValidateKeyPropertiesFunc<T>(Database database, IDataReader dataReader, string[] keys, string columnNamePrefix, object objectBeingFilled, out T objectToFill);
+        private delegate bool ValidateKeyPropertiesFunc<T>(IDataReader dataReader, string[] keys, string columnNamePrefix, object objectBeingFilled, out T objectToFill);
 
         /// <summary>
         /// Returns true if exist any object on the list that attends one of the keys and returns that object in the out parameter
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="database"></param>
         /// <param name="dataReader"></param>
         /// <param name="keys"></param>
         /// <param name="columnNamePrefix">Datareader column name prefix that being filled at the time</param>
         /// <param name="objectBeingFilled">List or object of type T being filled by datareader at the time</param>
         /// <param name="objectToFill">Object that matchs the keys</param>
         /// <returns></returns>
-        private static bool ValidateKeyProperties<T>(Database database, IDataReader dataReader, string[] keys, string columnNamePrefix, object objectBeingFilled, out T objectToFill)
+        private static bool ValidateKeyProperties<T>(IDataReader dataReader, string[] keys, string columnNamePrefix, object objectBeingFilled, out T objectToFill)
         {
             IList<T> list = null;
             T obj = default(T);
@@ -198,7 +199,7 @@ namespace Thimens.DataMapper
                 //value types don´t have properties. therefore, if one value type are the key, its value will be used in the validation
                 if (list != null && (typeof(T).IsValueType || typeof(T) == typeof(string)))
                 {
-                    subList = list.Where(o => o.Equals(GetValueFromDataReader(database, dataReader, (columnNamePrefix ?? ""), typeof(T))));
+                    subList = list.Where(o => o.Equals(GetValueFromDataReader(dataReader, (columnNamePrefix ?? ""), typeof(T))));
                     if (subList.Count() == 0)
                         isNewObj = true;
                     else
@@ -240,9 +241,9 @@ namespace Thimens.DataMapper
                                 var outObj = Activator.CreateInstance(d.Value.PropertyType);
 
                                 ValidateKeyPropertiesFunc<string> metodo = ValidateKeyProperties<string>;
-                                isNewObj = isNewObj || !(bool)metodo.Method.GetGenericMethodDefinition().MakeGenericMethod(d.Value.PropertyType).Invoke(null, new object[] { database, dataReader, new string[] { newKey }, columnNamePrefix + d.Value.Name + ".", d.Value.GetValue(obj, null), outObj });
+                                isNewObj = isNewObj || !(bool)metodo.Method.GetGenericMethodDefinition().MakeGenericMethod(d.Value.PropertyType).Invoke(null, new object[] { dataReader, new string[] { newKey }, columnNamePrefix + d.Value.Name + ".", d.Value.GetValue(obj, null), outObj });
                             }
-                            else if (!d.Value.GetValue(obj, null).Equals(GetValueFromDataReader(database, dataReader, (columnNamePrefix ?? "") + d.Value.Name, d.Value.PropertyType)))
+                            else if (!d.Value.GetValue(obj, null).Equals(GetValueFromDataReader(dataReader, (columnNamePrefix ?? "") + d.Value.Name, d.Value.PropertyType)))
                                 isNewObj = true;
                         });
 
@@ -260,13 +261,13 @@ namespace Thimens.DataMapper
                                 var newKey = columnNamePrefix + d.Key.Substring(0, d.Key.IndexOf("@")) + "." + d.Key.Substring(d.Key.IndexOf("@") + 1);
                                 var outObj = Activator.CreateInstance(d.Value.PropertyType);
 
-                                var parameters = new object[] { database, dataReader, new string[] { newKey }, columnNamePrefix + d.Value.Name + ".", (subList ?? list).Select(o => Convert.ChangeType(d.Value.GetValue(o, null), d.Value.PropertyType)).ToList(), outObj };
+                                var parameters = new object[] { dataReader, new string[] { newKey }, columnNamePrefix + d.Value.Name + ".", (subList ?? list).Select(o => Convert.ChangeType(d.Value.GetValue(o, null), d.Value.PropertyType)).ToList(), outObj };
                                 ValidateKeyPropertiesFunc<string> metodo = ValidateKeyProperties<string>;
                                 isNewObj = isNewObj || !(bool)metodo.Method.GetGenericMethodDefinition().MakeGenericMethod(d.Value.PropertyType).Invoke(null, parameters);
                                 subList = (subList ?? list).Where(o => d.Value.GetValue(o, null).Equals(parameters[5]));
                             }
                             else
-                                subList = (subList ?? list).Where(o => d.Value.GetValue(o, null).Equals(GetValueFromDataReader(database, dataReader, (columnNamePrefix ?? "") + d.Value.Name, d.Value.PropertyType)));
+                                subList = (subList ?? list).Where(o => d.Value.GetValue(o, null).Equals(GetValueFromDataReader(dataReader, (columnNamePrefix ?? "") + d.Value.Name, d.Value.PropertyType)));
                         });
 
                         if (subList.Count() == 0)
@@ -284,26 +285,26 @@ namespace Thimens.DataMapper
         /// 
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="database"></param>
         /// <param name="dataReader"></param>
+        /// <param name="columnNames"></param>
         /// <param name="keys"></param>
         /// <param name="columnNamePrefix"></param>
         /// <param name="objectToFill"></param>
-        private static void CreateObjectWithDataReader<T>(Database database, IDataReader dataReader, string[] keys, string columnNamePrefix, ref T objectToFill)
+        private static void CreateObjectWithDataReader<T>(IDataReader dataReader, IEnumerable<string> columnNames, string[] keys, string columnNamePrefix, ref T objectToFill)
         {
             var propertyName = string.Empty;
             var propertyNameAux = string.Empty;
             List<string> properties = new List<string>();
 
 
-            foreach (var columnName in GetColumnNames(dataReader))
+            foreach (var columnName in columnNames)
             {                
                 //validate if the datareader field is null or have the same prefix informed in parameters
                 if ((dataReader[columnName] != DBNull.Value) && (columnNamePrefix == null || columnName.IndexOf(columnNamePrefix) >= 0))
                 {
                     //value type
                     if (typeof(T).IsValueType || typeof(T) == typeof(string))
-                        objectToFill = (T)GetValueFromDataReader(database, dataReader, columnName, typeof(T));
+                        objectToFill = (T)GetValueFromDataReader(dataReader, columnName, typeof(T));
                     //reference type
                     else
                     {
@@ -334,20 +335,20 @@ namespace Thimens.DataMapper
                                     dynamic dynList = property.GetValue(objectToFill, null) ?? (property.PropertyType.IsArray ? Array.CreateInstance(property.PropertyType.GetElementType(), 0) : property.PropertyType.IsInterface ? Activator.CreateInstance(typeof(List<>).MakeGenericType(property.PropertyType.GetGenericArguments())) : Activator.CreateInstance(property.PropertyType));
                                     var list = Enumerable.ToList(dynList);
 
-                                    Func<Database, IDataReader, string[], string, IList<string>, string> metodo = GetObjectFromDataReader<string>;
-                                    var newObject = metodo.Method.GetGenericMethodDefinition().MakeGenericMethod(property.PropertyType.IsArray ? property.PropertyType.GetElementType() : property.PropertyType.GetGenericArguments().First()).Invoke(null, new object[] { database, dataReader, keys, columnNamePrefix + propertyName + ".", list });
+                                    Func<IDataReader, IEnumerable<string>, string[], string, IList<string>, string> metodo = GetObjectFromDataReader<string>;
+                                    var newObject = metodo.Method.GetGenericMethodDefinition().MakeGenericMethod(property.PropertyType.IsArray ? property.PropertyType.GetElementType() : property.PropertyType.GetGenericArguments().First()).Invoke(null, new object[] { dataReader, columnNames, keys, columnNamePrefix + propertyName + ".", list });
 
                                     property.SetValue(objectToFill, ConvertObjectList(list, dynList), null);
                                 }
                                 //is class or interface
                                 else if (!property.PropertyType.IsValueType && property.PropertyType != typeof(string))
                                 {
-                                    Func<Database, IDataReader, string[], string, string, string> metodo = GetObjectFromDataReader<string>;
-                                    property.SetValue(objectToFill, metodo.Method.GetGenericMethodDefinition().MakeGenericMethod(property.PropertyType).Invoke(null, new object[] { database, dataReader, keys, columnNamePrefix + propertyName + ".", null }), null);
+                                    Func<IDataReader, IEnumerable<string>, string[], string, string, string> metodo = GetObjectFromDataReader<string>;
+                                    property.SetValue(objectToFill, metodo.Method.GetGenericMethodDefinition().MakeGenericMethod(property.PropertyType).Invoke(null, new object[] { dataReader, columnNames, keys, columnNamePrefix + propertyName + ".", null }), null);
                                 }
                                 //is value type
                                 else
-                                    property.SetValue(objectToFill, GetValueFromDataReader(database, dataReader, columnName, property.PropertyType), null);
+                                    property.SetValue(objectToFill, GetValueFromDataReader(dataReader, columnName, property.PropertyType), null);
                             }
                         }
                     }
@@ -358,31 +359,13 @@ namespace Thimens.DataMapper
         /// <summary>
         /// Returns object from datareader
         /// </summary>
-        /// <param name="database">Database of the current connection</param>
         /// <param name="dataReader"></param>
         /// <param name="columnName">Datareader column name</param>
         /// <param name="type">Type of returned object</param>
         /// <returns></returns>
-        private static object GetValueFromDataReader(Database database, IDataReader dataReader, string columnName, Type type)
+        private static object GetValueFromDataReader(IDataReader dataReader, string columnName, Type type)
         {
-            //hack for DB2 with odbc provider - no comma for decimal values
-            if (dataReader[columnName].GetType() == typeof(decimal) && database.DbProviderFactory.ToString() == "System.Data.Odbc.OdbcFactory")
-            {
-                //search for decimal points defined in database to correct the value read from datareader
-                var tableSchema = dataReader.GetSchemaTable();
-                var columnSchema = tableSchema.Select(string.Format("ColumnName = '{0}'", columnName)).FirstOrDefault();
-                var numericScaleInfo = tableSchema.Columns["NumericScale"];
-                int scale = 0;
-
-                if (columnSchema != null && numericScaleInfo != null)
-                    scale = Convert.ToInt32(columnSchema.ItemArray[numericScaleInfo.Ordinal]);
-
-                if (scale > 0 && dataReader[columnName].ToString().IndexOf(NumberFormatInfo.CurrentInfo.CurrencyDecimalSeparator) == -1)
-                    return Convert.ChangeType((decimal)dataReader[columnName] / Convert.ToDecimal(Math.Pow(10, scale)), Nullable.GetUnderlyingType(type) ?? type);
-                else
-                    return Convert.ChangeType(dataReader[columnName], Nullable.GetUnderlyingType(type) ?? type);
-            }
-            else if (type.IsEnum)
+            if (type.IsEnum)
             {
                 //check if enum property has an DefaultValueAttribute annotation to be validated. 
                 foreach (var eValor in Enum.GetValues(type))
