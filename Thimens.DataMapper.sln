@@ -5,6 +5,8 @@ VisualStudioVersion = 15.0.26621.2
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Thimens.DataMapper", "Thimens.DataMapper\Thimens.DataMapper.csproj", "{0CC38322-2BEB-4B3D-BFB8-58C285D47C52}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test", "Test\Test.csproj", "{3A1DE996-7BE4-430A-9437-092827059EBB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{0CC38322-2BEB-4B3D-BFB8-58C285D47C52}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0CC38322-2BEB-4B3D-BFB8-58C285D47C52}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0CC38322-2BEB-4B3D-BFB8-58C285D47C52}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3A1DE996-7BE4-430A-9437-092827059EBB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3A1DE996-7BE4-430A-9437-092827059EBB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3A1DE996-7BE4-430A-9437-092827059EBB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3A1DE996-7BE4-430A-9437-092827059EBB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

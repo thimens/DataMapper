@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
 
-namespace ClassLibrary1
+namespace Thimens.DataMapper.New
 {
     public class DataMap
     {

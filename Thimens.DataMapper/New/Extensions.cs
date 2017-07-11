@@ -6,52 +6,102 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Reflection;
+using Thimens.DataMapper;
+using Thimens.DataMapper.Old;
+using System.ComponentModel;
 
-
-namespace ClassLibrary1
+namespace Thimens.DataMapper.New
 {
-    public class Extensions
+    public static class Extensions
     {
-        public T Get<T>(IDataReader dataReader, params string[] keys)
+        public static T Get<T>(this Database database, CommandType commandType, string query, IEnumerable<Parameter> parameters, params string[] keys)
         {
-            T obj = default(T);
-            /*
-            columns = new string[] { "id", "name", "orders.id", "orders.deliverytime", "orders.products.id", "orders.products.name", "orders.products.value" };
-            */
-            var maps = GetDataMap<T>(GetColumnsDictonary(dataReader), keys);
-
-            while (dataReader.Read())
+            using (IDataReader dataReader = database.ExecuteReader(CreateCommand(database, commandType, query, parameters)))
             {
-                if (IsValueType(typeof(T)))
-                    obj = GetObjectFromDataReader<T>(dataReader, maps);
-                else
-                    obj = (T)dataReader[0];
+                T obj = default(T);
+
+                var maps = GetDataMap<T>(GetColumnsDictonary(dataReader), keys);
+
+                while (dataReader.Read())
+                {
+                    if (!IsValueType(typeof(T)))
+                        GetObjectFromDataReader(dataReader, maps, ref obj);
+                    else
+                        obj = (T)dataReader[0];
+                }
+
+                return obj;
+            }
+        }
+
+        private static bool GetObjectFromDataReader<T>(IDataReader dataReader, IEnumerable<DataMap> maps, ref T obj)
+        {
+            if (obj == null)
+                obj = Activator.CreateInstance<T>();
+
+            foreach(var map in maps)
+            {
+                var property = map.Property;
+
+                if (map.MapType == MapType.Value)
+                    property.SetValue(obj, ConvertValue(dataReader[map.Column], property.PropertyType));
+                else if (map.MapType == MapType.Reference)
+                {
+                    var oProp = Activator.CreateInstance(property.PropertyType);
+                    GetObjectFromDataReader(dataReader, map.Maps, ref oProp);
+                    property.SetValue(obj, oProp);
+                }
+                else if (map.MapType == MapType.List)
+                {
+                    if (property.PropertyType.IsInterface && !property.PropertyType.IsAssignableFrom(typeof(List<>).MakeGenericType(property.PropertyType.GetGenericArguments())))
+                        throw new ApplicationException($"Could not resolve property {property.Name} of type {property.PropertyType.Name}. The property must be instantiable or assingnabe from a List<T>");
+
+                    dynamic dynList = property.GetValue(obj) ?? (property.PropertyType.IsArray ? Array.CreateInstance(property.PropertyType.GetElementType(), 0) : property.PropertyType.IsInterface ? Activator.CreateInstance(typeof(List<>).MakeGenericType(property.PropertyType.GetGenericArguments())) : Activator.CreateInstance(property.PropertyType));
+                    var list = Enumerable.ToList(dynList);
+
+                    Func<IDataReader, IEnumerable<string>, string[], string, IList<string>, string> metodo = GetObjectFromDataReader<string>;
+                    var newObject = metodo.Method.GetGenericMethodDefinition().MakeGenericMethod(property.PropertyType.IsArray ? property.PropertyType.GetElementType() : property.PropertyType.GetGenericArguments().First()).Invoke(null, new object[] { dataReader, columnNames, keys, columnNamePrefix + propertyName + ".", list });
+
+                    property.SetValue(obj, ConvertObjectList(list, dynList), null);
+                }
             }
 
             return obj;
         }
 
-        public T GetObjectFromDataReader<T>(IDataReader dataReader, IEnumerable<DataMap> maps)
+
+        /// <summary>
+        /// Converts source obj to Type destinationType
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <param name="destinationType">Type of returned object</param>
+        /// <returns></returns>
+        private static object ConvertValue(object obj, Type destinationType)
         {
-            T obj = Activator.CreateInstance<T>();
+            if (destinationType.IsEnum)
+            {
+                //check if enum property has an DefaultValueAttribute annotation to be validated. 
+                foreach (var eValor in Enum.GetValues(destinationType))
+                {
+                    var attribute = (DefaultValueAttribute)destinationType.GetField(eValor.ToString()).GetCustomAttributes(typeof(DefaultValueAttribute), false).FirstOrDefault();
 
-            //foreach (var column in columns)
-            //{
-            //    if (dataReader[column] != DBNull.Value)
-            //    {
+                    if (attribute != null && attribute.Value.Equals(obj))
+                        return eValor;
+                }
 
-
-            //    }
-            //}
-
-            return obj;
+                return Enum.Parse(destinationType, obj.ToString(), true);
+            }
+            else if (obj.GetType() == typeof(string))
+                //check if the database field are a string used as boolean ('Y', 'N') and the property is boolean
+                if (destinationType == typeof(bool))
+                    return obj.ToString().Trim().Replace('"', '\'').ToLower() == "y" ? true : false;
+                else
+                    return Convert.ChangeType(obj.ToString().Trim().Replace('"', '\''), Nullable.GetUnderlyingType(destinationType) ?? destinationType);
+            else
+                return Convert.ChangeType(obj, Nullable.GetUnderlyingType(destinationType) ?? destinationType);
         }
 
 
-
-
-
-        
         private static IEnumerable<DataMap> GetDataMap<T>(IDictionary<string, string[]> columns, IEnumerable<string> keys)
         {
             //properties to return
@@ -143,6 +193,18 @@ namespace ClassLibrary1
         private static bool IsListType(Type type)
         {
             return typeof(IEnumerable).IsAssignableFrom(type) && type != typeof(string);
+        }
+
+        private static DbCommand CreateCommand(Database database, CommandType commandType, string query, IEnumerable<Parameter> parameters)
+        {
+            var command = database.GetSqlStringCommand(query);
+            command.CommandType = commandType;
+
+            if (parameters != null)
+                foreach (var parameter in parameters)
+                    database.AddParameter(command, parameter.Name, parameter.DbType, parameter.Direction, null, parameter.SourceVersion, parameter.Value);
+
+            return command;
         }
     }
 }
