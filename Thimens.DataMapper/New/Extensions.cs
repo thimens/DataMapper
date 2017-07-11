@@ -34,7 +34,33 @@ namespace Thimens.DataMapper.New
             }
         }
 
-        private static bool GetObjectFromDataReader<T>(IDataReader dataReader, IEnumerable<DataMap> maps, ref T obj)
+        /// <summary>
+        /// <para>Executes the <paramref name="query"/> and returns the number of rows affected.</para>
+        /// </summary>
+        /// <param name="database"></param>
+        /// <param name="commandType"></param>
+        /// <param name="query"></param>
+        /// <param name="parameters"></param>
+        /// <returns></returns>
+        public static int ExecuteNonQuery(this Database database, CommandType commandType, string query, IEnumerable<Parameter> parameters)
+        {
+            return database.ExecuteNonQuery(CreateCommand(database, commandType, query, parameters));
+        }
+
+        /// <summary>
+        /// Executes the <paramref name="query"/> and returns the first column of the first row in the result set returned by the query. Extra columns or rows are ignored.
+        /// </summary>
+        /// <param name="database"></param>
+        /// <param name="commandType"></param>
+        /// <param name="query"></param>
+        /// <param name="parameters"></param>
+        /// <returns></returns>
+        public static object ExecuteScalar(this Database database, CommandType commandType, string query, IEnumerable<Parameter> parameters)
+        {
+            return database.ExecuteScalar(CreateCommand(database, commandType, query, parameters));
+        }
+
+        private static void GetObjectFromDataReader<T>(IDataReader dataReader, IEnumerable<DataMap> maps, ref T obj)
         {
             if (obj == null)
                 obj = Activator.CreateInstance<T>();
@@ -42,31 +68,58 @@ namespace Thimens.DataMapper.New
             foreach(var map in maps)
             {
                 var property = map.Property;
+                var propertyType = property.PropertyType;
 
                 if (map.MapType == MapType.Value)
-                    property.SetValue(obj, ConvertValue(dataReader[map.Column], property.PropertyType));
+                    property.SetValue(obj, ConvertValue(dataReader[map.Column], propertyType));
                 else if (map.MapType == MapType.Reference)
                 {
-                    var oProp = Activator.CreateInstance(property.PropertyType);
+                    var oProp = Activator.CreateInstance(propertyType);
                     GetObjectFromDataReader(dataReader, map.Maps, ref oProp);
                     property.SetValue(obj, oProp);
                 }
                 else if (map.MapType == MapType.List)
                 {
-                    if (property.PropertyType.IsInterface && !property.PropertyType.IsAssignableFrom(typeof(List<>).MakeGenericType(property.PropertyType.GetGenericArguments())))
-                        throw new ApplicationException($"Could not resolve property {property.Name} of type {property.PropertyType.Name}. The property must be instantiable or assingnabe from a List<T>");
+                    var listInfo = GetList(obj, map, dataReader);
 
-                    dynamic dynList = property.GetValue(obj) ?? (property.PropertyType.IsArray ? Array.CreateInstance(property.PropertyType.GetElementType(), 0) : property.PropertyType.IsInterface ? Activator.CreateInstance(typeof(List<>).MakeGenericType(property.PropertyType.GetGenericArguments())) : Activator.CreateInstance(property.PropertyType));
-                    var list = Enumerable.ToList(dynList);
+                    GetObjectFromDataReader(dataReader, map.Maps, ref listInfo.Item);
 
-                    Func<IDataReader, IEnumerable<string>, string[], string, IList<string>, string> metodo = GetObjectFromDataReader<string>;
-                    var newObject = metodo.Method.GetGenericMethodDefinition().MakeGenericMethod(property.PropertyType.IsArray ? property.PropertyType.GetElementType() : property.PropertyType.GetGenericArguments().First()).Invoke(null, new object[] { dataReader, columnNames, keys, columnNamePrefix + propertyName + ".", list });
+                    if (listInfo.IsNewItem)
+                        listInfo.List.Add(listInfo.Item);
 
-                    property.SetValue(obj, ConvertObjectList(list, dynList), null);
+                    property.SetValue(obj, listInfo.List);
                 }
             }
+        }
 
-            return obj;
+        private static (bool IsNewItem, ICollection<T> List, T Item) GetList<T>(object sourceObj, DataMap listMap, IDataReader dataReader)
+        {
+            var isNewItem = true;
+            T item = Activator.CreateInstance<T>();
+            var keys = listMap.Maps.Where(m => m.IsKey);
+
+            var list = listMap.Property.GetValue(sourceObj) as ICollection<T>;
+
+            if (keys.Any())
+            {
+                if (list == null)
+                    list = new HashSet<T>(new HashItemEqualityComparer<T>());
+
+                foreach (var key in keys)
+                    key.Property.SetValue(item, ConvertValue(dataReader[key.Column], key.Property.PropertyType));
+
+                if (((HashSet<T>)list).Contains(item))
+                {
+                    isNewItem = false;
+                    item = (((HashSet<T>)list).Comparer as HashItemEqualityComparer<T>).HashItem;
+                }
+            }
+            else
+                if (list == null)
+                    list = new List<T>();
+                        
+
+            return (isNewItem, list, item);
         }
 
 
@@ -132,6 +185,9 @@ namespace Thimens.DataMapper.New
                         {
                             mapType = MapType.List;
 
+                            if (!property.PropertyType.IsInterface && !property.PropertyType.IsAssignableFrom(typeof(List<>).MakeGenericType(property.PropertyType.GetGenericArguments())) && !property.PropertyType.IsAssignableFrom(typeof(HashSet<>).MakeGenericType(property.PropertyType.GetGenericArguments())))
+                                throw new ApplicationException($"Could not resolve property {property.Name} of type {property.PropertyType.Name}. The property must be instantiable or assingnabe from a List<T> or HashSet<T>");
+                            
                             if (property.PropertyType.IsArray)
                                 propType = property.PropertyType.GetElementType();
                             else

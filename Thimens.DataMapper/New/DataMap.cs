@@ -5,7 +5,7 @@ using System.Text;
 
 namespace Thimens.DataMapper.New
 {
-    public class DataMap
+    internal class DataMap
     {
         public PropertyInfo Property { get; set; }
         public string Column { get; set; }
@@ -14,7 +14,7 @@ namespace Thimens.DataMapper.New
         public IEnumerable<DataMap> Maps { get; set; }
     }
 
-    public enum MapType
+    internal enum MapType
     {
         Value,
         Reference,
