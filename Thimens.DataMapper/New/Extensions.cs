@@ -20,7 +20,7 @@ namespace Thimens.DataMapper.New
             {
                 T obj = default(T);
 
-                var maps = GetDataMap<T>(GetColumnsDictonary(dataReader), keys);
+                var maps = GetDataMaps<T>(GetColumnsDictonary(dataReader), keys);
 
                 while (dataReader.Read())
                 {
@@ -80,46 +80,51 @@ namespace Thimens.DataMapper.New
                 }
                 else if (map.MapType == MapType.List)
                 {
-                    var listInfo = GetList(obj, map, dataReader);
+                    (bool IsNewItem, ICollection List, object Item) listInfo = ((Func<object, DataMap, IDataReader, (bool, ICollection<string>, string)>)GetList<string>)
+                        .Method
+                        .MakeGenericMethod(map.ListInnerType)
+                        .Invoke(null, new object[] { obj, map, dataReader }) as (bool isNewItem, ICollection list, object item);
+
+                    propertyType.ma
+
+                    var iInfo = GetList((property.GetValue(obj), map, dataReader);
 
                     GetObjectFromDataReader(dataReader, map.Maps, ref listInfo.Item);
 
                     if (listInfo.IsNewItem)
-                        listInfo.List.Add(listInfo.Item);
+                        listInfo.List..Add(listInfo.Item);
 
                     property.SetValue(obj, listInfo.List);
                 }
             }
         }
 
-        private static (bool IsNewItem, ICollection<T> List, T Item) GetList<T>(object sourceObj, DataMap listMap, IDataReader dataReader)
+        private static (bool IsNewItem, ICollection<T> List, T Item) GetList<T>(ICollection<T> objList, DataMap listMap, IDataReader dataReader)
         {
             var isNewItem = true;
             T item = Activator.CreateInstance<T>();
             var keys = listMap.Maps.Where(m => m.IsKey);
 
-            var list = listMap.Property.GetValue(sourceObj) as ICollection<T>;
-
             if (keys.Any())
             {
-                if (list == null)
-                    list = new HashSet<T>(new HashItemEqualityComparer<T>());
+                if (objList == null)
+                    objList = new HashSet<T>(new HashItemEqualityComparer<T>());
 
                 foreach (var key in keys)
                     key.Property.SetValue(item, ConvertValue(dataReader[key.Column], key.Property.PropertyType));
 
-                if (((HashSet<T>)list).Contains(item))
+                if (((HashSet<T>)objList).Contains(item))
                 {
                     isNewItem = false;
-                    item = (((HashSet<T>)list).Comparer as HashItemEqualityComparer<T>).HashItem;
+                    item = (((HashSet<T>)objList).Comparer as HashItemEqualityComparer<T>).HashItem;
                 }
             }
             else
-                if (list == null)
-                    list = new List<T>();
+                if (objList == null)
+                    objList = new List<T>();
                         
 
-            return (isNewItem, list, item);
+            return (isNewItem, objList, item);
         }
 
 
@@ -155,7 +160,7 @@ namespace Thimens.DataMapper.New
         }
 
 
-        private static IEnumerable<DataMap> GetDataMap<T>(IDictionary<string, string[]> columns, IEnumerable<string> keys)
+        private static IEnumerable<DataMap> GetDataMaps<T>(IDictionary<string, string[]> columns, IEnumerable<string> keys)
         {
             //properties to return
             var maps = new List<DataMap>();
@@ -213,9 +218,9 @@ namespace Thimens.DataMapper.New
                         {
                             Property = property,
                             MapType = mapType,
-                            Maps = (IEnumerable<DataMap>)((Func<IDictionary<string, string[]>, IEnumerable<string> , IEnumerable<DataMap>>)GetDataMap<string>)
+                            ListInnerType = (mapType == MapType.List ? propType : null),
+                            Maps = (IEnumerable<DataMap>)((Func<IDictionary<string, string[]>, IEnumerable<string> , IEnumerable<DataMap>>)GetDataMaps<string>)
                             .Method
-                            .GetGenericMethodDefinition()
                             .MakeGenericMethod(propType)
                             .Invoke(null, new object[] { columnsDict, keys })
                         };
