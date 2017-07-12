@@ -14,6 +14,38 @@ namespace Thimens.DataMapper.New
 {
     public static class Extensions
     {
+        /// <summary>
+        /// Executes the <paramref name="query"/> and returns the number of rows affected.
+        /// </summary>
+        /// <param name="database"></param>
+        /// <param name="commandType"></param>
+        /// <param name="query"></param>
+        /// <param name="parameters"></param>
+        /// <returns></returns>
+        public static int ExecuteNonQuery(this Database database, CommandType commandType, string query, IEnumerable<Parameter> parameters) => 
+            database.ExecuteNonQuery(CreateCommand(database, commandType, query, parameters));
+
+        /// <summary>
+        /// Executes the <paramref name="query"/> and returns the first column of the first row in the result set returned by the query. Extra columns or rows are ignored.
+        /// </summary>
+        /// <param name="database"></param>
+        /// <param name="commandType"></param>
+        /// <param name="query"></param>
+        /// <param name="parameters"></param>
+        /// <returns></returns>
+        public static object ExecuteScalar(this Database database, CommandType commandType, string query, IEnumerable<Parameter> parameters) => 
+            database.ExecuteScalar(CreateCommand(database, commandType, query, parameters));
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="database"></param>
+        /// <param name="commandType"></param>
+        /// <param name="query"></param>
+        /// <param name="parameters"></param>
+        /// <param name="keys"></param>
+        /// <returns></returns>
         public static T Get<T>(this Database database, CommandType commandType, string query, IEnumerable<Parameter> parameters, params string[] keys)
         {
             using (IDataReader dataReader = database.ExecuteReader(CreateCommand(database, commandType, query, parameters)))
@@ -33,33 +65,7 @@ namespace Thimens.DataMapper.New
                 return obj;
             }
         }
-
-        /// <summary>
-        /// <para>Executes the <paramref name="query"/> and returns the number of rows affected.</para>
-        /// </summary>
-        /// <param name="database"></param>
-        /// <param name="commandType"></param>
-        /// <param name="query"></param>
-        /// <param name="parameters"></param>
-        /// <returns></returns>
-        public static int ExecuteNonQuery(this Database database, CommandType commandType, string query, IEnumerable<Parameter> parameters)
-        {
-            return database.ExecuteNonQuery(CreateCommand(database, commandType, query, parameters));
-        }
-
-        /// <summary>
-        /// Executes the <paramref name="query"/> and returns the first column of the first row in the result set returned by the query. Extra columns or rows are ignored.
-        /// </summary>
-        /// <param name="database"></param>
-        /// <param name="commandType"></param>
-        /// <param name="query"></param>
-        /// <param name="parameters"></param>
-        /// <returns></returns>
-        public static object ExecuteScalar(this Database database, CommandType commandType, string query, IEnumerable<Parameter> parameters)
-        {
-            return database.ExecuteScalar(CreateCommand(database, commandType, query, parameters));
-        }
-
+        
         private static void GetObjectFromDataReader<T>(IDataReader dataReader, IEnumerable<DataMap> maps, ref T obj)
         {
             if (obj == null)
@@ -68,7 +74,7 @@ namespace Thimens.DataMapper.New
             foreach(var map in maps)
             {
                 var property = map.Property;
-                var propertyType = property.PropertyType;
+                var propertyType = property?.PropertyType;
 
                 if (map.MapType == MapType.Value)
                     property.SetValue(obj, ConvertValue(dataReader[map.Column], propertyType));
@@ -79,52 +85,47 @@ namespace Thimens.DataMapper.New
                     property.SetValue(obj, oProp);
                 }
                 else if (map.MapType == MapType.List)
-                {
-                    (bool IsNewItem, ICollection List, object Item) listInfo = ((Func<object, DataMap, IDataReader, (bool, ICollection<string>, string)>)GetList<string>)
-                        .Method
-                        .MakeGenericMethod(map.ListInnerType)
-                        .Invoke(null, new object[] { obj, map, dataReader }) as (bool isNewItem, ICollection list, object item);
+                {                    
+                    var listInfo = (dynamic)map.GetListMethod.Invoke(null, new object[] { obj, map, dataReader });
 
-                    propertyType.ma
+                    GetObjectFromDataReader(dataReader, map.Maps, ref listInfo.Item3);
 
-                    var iInfo = GetList((property.GetValue(obj), map, dataReader);
+                    if (listInfo.Item1)
+                        listInfo.Item2.Add(listInfo.Item3);
 
-                    GetObjectFromDataReader(dataReader, map.Maps, ref listInfo.Item);
-
-                    if (listInfo.IsNewItem)
-                        listInfo.List..Add(listInfo.Item);
-
-                    property.SetValue(obj, listInfo.List);
+                    //property.SetValue(obj, listInfo.Item2);
                 }
             }
         }
 
-        private static (bool IsNewItem, ICollection<T> List, T Item) GetList<T>(ICollection<T> objList, DataMap listMap, IDataReader dataReader)
+        private static (bool IsNewItem, ICollection<T> List, T Item) GetList<T>(object sourceObj, DataMap map, IDataReader dataReader)
         {
             var isNewItem = true;
             T item = Activator.CreateInstance<T>();
-            var keys = listMap.Maps.Where(m => m.IsKey);
+            var keys = map.Maps.Where(m => m.IsKey);
+
+            var list = map.Property.GetValue(sourceObj) as ICollection<T>;
 
             if (keys.Any())
             {
-                if (objList == null)
-                    objList = new HashSet<T>(new HashItemEqualityComparer<T>());
+                if (list == null)
+                    list = new HashSet<T>(new HashItemEqualityComparer<T>(keys.Select(k => k.Property).ToArray()));
 
                 foreach (var key in keys)
                     key.Property.SetValue(item, ConvertValue(dataReader[key.Column], key.Property.PropertyType));
 
-                if (((HashSet<T>)objList).Contains(item))
+                if (((HashSet<T>)list).Contains(item))
                 {
                     isNewItem = false;
-                    item = (((HashSet<T>)objList).Comparer as HashItemEqualityComparer<T>).HashItem;
+                    item = (((HashSet<T>)list).Comparer as HashItemEqualityComparer<T>).HashItem;
                 }
             }
             else
-                if (objList == null)
-                    objList = new List<T>();
+                if (list == null)
+                    list = new List<T>();
                         
 
-            return (isNewItem, objList, item);
+            return (isNewItem, list, item);
         }
 
 
@@ -167,9 +168,20 @@ namespace Thimens.DataMapper.New
                         
             //properties of T
             var tProps = typeof(T).GetProperties()?.ToDictionary(p => p.Name.ToLower());
+                        
+            //value types do not have properties
+            if (tProps.Count == 0)
+            {
+                maps.Add(new DataMap()
+                {
+                    Column = columns.First().Key,
+                    MapType = MapType.Value,
+                    IsKey = keys.Any(k => k.Equals(columns.First().Key, StringComparison.OrdinalIgnoreCase))
+                });
+            }
 
             foreach(var columnGroup in columns.GroupBy(c => c.Value[0]))
-            {
+            {                
                 if (tProps.TryGetValue(columnGroup.Key, out PropertyInfo property))
                 {
                     //value type
@@ -217,10 +229,11 @@ namespace Thimens.DataMapper.New
                         var map = new DataMap()
                         {
                             Property = property,
-                            MapType = mapType,
-                            ListInnerType = (mapType == MapType.List ? propType : null),
+                            MapType = mapType,                            
+                            GetListMethod = ((Func<object, DataMap, IDataReader, (bool, ICollection<int>, int)>)GetList<int>).Method.GetGenericMethodDefinition().MakeGenericMethod(propType),
                             Maps = (IEnumerable<DataMap>)((Func<IDictionary<string, string[]>, IEnumerable<string> , IEnumerable<DataMap>>)GetDataMaps<string>)
                             .Method
+                            .GetGenericMethodDefinition()
                             .MakeGenericMethod(propType)
                             .Invoke(null, new object[] { columnsDict, keys })
                         };

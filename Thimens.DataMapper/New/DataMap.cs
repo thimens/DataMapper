@@ -13,6 +13,7 @@ namespace Thimens.DataMapper.New
         public MapType MapType { get; set; }
         public IEnumerable<DataMap> Maps { get; set; }
         public Type ListInnerType { get; set; }
+        public MethodInfo GetListMethod { get; set; }
     }
 
     internal enum MapType

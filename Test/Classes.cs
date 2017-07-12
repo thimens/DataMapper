@@ -9,6 +9,7 @@ namespace Test
         public int ID { get; set; }
         public string Name { get; set; }
         public IEnumerable<Order> Orders{ get; set; }
+        public IEnumerable<int> OrdersID { get; set; }
     }
 
     public class Order

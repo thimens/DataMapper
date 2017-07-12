@@ -20,7 +20,7 @@ namespace Thimens.DataMapper.New
         public bool Equals(T x, T y)
         {
             foreach (var prop in _keyProperties)
-                if (prop.GetValue(x) != prop.GetValue(y))
+                if (!prop.GetValue(x).Equals(prop.GetValue(y)))
                     return false;
 
             HashItem = x;
