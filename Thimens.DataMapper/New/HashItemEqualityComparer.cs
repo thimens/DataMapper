@@ -19,9 +19,17 @@ namespace Thimens.DataMapper.New
 
         public bool Equals(T x, T y)
         {
-            foreach (var prop in _keyProperties)
-                if (!prop.GetValue(x).Equals(prop.GetValue(y)))
+            if (_keyProperties != null)
+            {
+                foreach (var prop in _keyProperties)
+                    if (!prop.GetValue(x).Equals(prop.GetValue(y)))
+                        return false;
+            }
+            else
+            {
+                if (!x.Equals(y))
                     return false;
+            }
 
             HashItem = x;
             return true;
@@ -30,8 +38,13 @@ namespace Thimens.DataMapper.New
         public int GetHashCode(T obj)
         {
             int hash = 27;
-            foreach (var prop in _keyProperties)
-                hash = (13 * hash) + prop.GetValue(obj).GetHashCode();
+
+            if (_keyProperties != null)
+                foreach (var prop in _keyProperties)
+                    hash = (13 * hash) + prop.GetValue(obj).GetHashCode();
+            else
+                hash = (13 * hash) + obj.GetHashCode();
+
             return hash;
         }
     }

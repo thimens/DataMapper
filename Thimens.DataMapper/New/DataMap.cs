@@ -21,5 +21,6 @@ namespace Thimens.DataMapper.New
         Value,
         Reference,
         List,
+        ValueList
     }
 }

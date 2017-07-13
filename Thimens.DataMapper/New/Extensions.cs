@@ -9,6 +9,7 @@ using System.Reflection;
 using Thimens.DataMapper;
 using Thimens.DataMapper.Old;
 using System.ComponentModel;
+using System.Globalization;
 
 namespace Thimens.DataMapper.New
 {
@@ -48,6 +49,9 @@ namespace Thimens.DataMapper.New
         /// <returns></returns>
         public static T Get<T>(this Database database, CommandType commandType, string query, IEnumerable<Parameter> parameters, params string[] keys)
         {
+            if (IsListType(typeof(T)))
+                return Get<ContainerClass<T>>(database, commandType, query, parameters, keys).Content;
+
             using (IDataReader dataReader = database.ExecuteReader(CreateCommand(database, commandType, query, parameters)))
             {
                 T obj = default(T);
@@ -84,16 +88,17 @@ namespace Thimens.DataMapper.New
                     GetObjectFromDataReader(dataReader, map.Maps, ref oProp);
                     property.SetValue(obj, oProp);
                 }
-                else if (map.MapType == MapType.List)
+                else if (map.MapType == MapType.List || map.MapType == MapType.ValueList)
                 {                    
                     var listInfo = (dynamic)map.GetListMethod.Invoke(null, new object[] { obj, map, dataReader });
 
-                    GetObjectFromDataReader(dataReader, map.Maps, ref listInfo.Item3);
+                    if (map.MapType != MapType.ValueList)
+                        GetObjectFromDataReader(dataReader, map.Maps, ref listInfo.Item3);
 
                     if (listInfo.Item1)
                         listInfo.Item2.Add(listInfo.Item3);
 
-                    //property.SetValue(obj, listInfo.Item2);
+                    property.SetValue(obj, listInfo.Item2);
                 }
             }
         }
@@ -109,10 +114,13 @@ namespace Thimens.DataMapper.New
             if (keys.Any())
             {
                 if (list == null)
-                    list = new HashSet<T>(new HashItemEqualityComparer<T>(keys.Select(k => k.Property).ToArray()));
+                    list = new HashSet<T>(new HashItemEqualityComparer<T>(map.MapType == MapType.ValueList ? null : keys.Select(k => k.Property).ToArray()));
 
                 foreach (var key in keys)
-                    key.Property.SetValue(item, ConvertValue(dataReader[key.Column], key.Property.PropertyType));
+                    if (map.MapType == MapType.ValueList)
+                        item = (T)ConvertValue(dataReader[key.Column], typeof(T));
+                    else
+                        key.Property.SetValue(item, ConvertValue(dataReader[key.Column], key.Property.PropertyType));
 
                 if (((HashSet<T>)list).Contains(item))
                 {
@@ -121,9 +129,13 @@ namespace Thimens.DataMapper.New
                 }
             }
             else
+            {
                 if (list == null)
                     list = new List<T>();
-                        
+
+                if (map.MapType == MapType.ValueList)
+                    item = (T)ConvertValue(dataReader[map.Maps.First().Column], typeof(T));
+            }
 
             return (isNewItem, list, item);
         }
@@ -165,22 +177,19 @@ namespace Thimens.DataMapper.New
         {
             //properties to return
             var maps = new List<DataMap>();
-                        
+            var columnGroups = columns.GroupBy(c => c.Value[0]);
+
             //properties of T
             var tProps = typeof(T).GetProperties()?.ToDictionary(p => p.Name.ToLower());
-                        
+
             //value types do not have properties
-            if (tProps.Count == 0)
+            if (IsValueType(typeof(T)))
             {
-                maps.Add(new DataMap()
-                {
-                    Column = columns.First().Key,
-                    MapType = MapType.Value,
-                    IsKey = keys.Any(k => k.Equals(columns.First().Key, StringComparison.OrdinalIgnoreCase))
-                });
+                tProps.Clear();
+                tProps.Add(columnGroups.First().Key, typeof(ContainerClass<T>).GetProperty("Content"));
             }
 
-            foreach(var columnGroup in columns.GroupBy(c => c.Value[0]))
+            foreach(var columnGroup in columnGroups)
             {                
                 if (tProps.TryGetValue(columnGroup.Key, out PropertyInfo property))
                 {
@@ -200,8 +209,6 @@ namespace Thimens.DataMapper.New
                         //list
                         if (IsListType(property.PropertyType))
                         {
-                            mapType = MapType.List;
-
                             if (!property.PropertyType.IsInterface && !property.PropertyType.IsAssignableFrom(typeof(List<>).MakeGenericType(property.PropertyType.GetGenericArguments())) && !property.PropertyType.IsAssignableFrom(typeof(HashSet<>).MakeGenericType(property.PropertyType.GetGenericArguments())))
                                 throw new ApplicationException($"Could not resolve property {property.Name} of type {property.PropertyType.Name}. The property must be instantiable or assingnabe from a List<T> or HashSet<T>");
                             
@@ -209,6 +216,11 @@ namespace Thimens.DataMapper.New
                                 propType = property.PropertyType.GetElementType();
                             else
                                 propType = property.PropertyType.GetGenericArguments()[0];
+
+                            if (IsValueType(propType))
+                                mapType = MapType.ValueList;
+                            else
+                                mapType = MapType.List;
                         }
                         //class or interface
                         else
@@ -280,5 +292,10 @@ namespace Thimens.DataMapper.New
 
             return command;
         }
+    }
+    
+    internal class ContainerClass<T>
+    {
+        public T Content { get; set; }
     }
 }
