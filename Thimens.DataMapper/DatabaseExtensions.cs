@@ -1,99 +1,31 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.ComponentModel;
-using System.Data;
-using System.Globalization;
+using System.Linq.Expressions;
 using System.Collections;
-using System.Reflection;
+using System.Collections.Generic;
+using System.Data;
 using System.Data.Common;
+using System.Reflection;
+using System.ComponentModel;
+using System.Globalization;
 
-namespace Thimens.DataMapper.Old
+namespace Thimens.DataMapper
 {
     /// <summary>
     /// Extends the Database class
     /// </summary>
-    public static class DatabasebExtensions
+    public static class DatabaseExtensions
     {
         /// <summary>
-        /// Returns a list of objects from the query result.
-        /// Object properties and fields returned from the query must have same name.
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="database"></param>
-        /// <param name="commandType"></param>
-        /// <param name="query"></param>
-        /// <param name="parameters">Parameters for the query</param>
-        /// <param name="keys">Object properties used as unique keys to fill the main or  nested lists. Inform as keys as necessary.</param>
-        /// <returns></returns>
-        public static List<T> List<T>(this Database database, CommandType commandType, string query, IEnumerable<Parameter> parameters, params string[] keys)
-        {
-            var list = new List<T>();
-
-            using (IDataReader reader = database.ExecuteReader(CreateCommand(database, commandType, query, parameters)))
-            {
-                T obj = default(T);
-                var columnNames = GetColumnNames(reader);
-
-                while (reader.Read())
-                {
-                    //reference type 
-                    if (default(T) == null && typeof(T) != typeof(string))
-                        obj = GetObjectFromDataReader<T>(reader, columnNames, keys, null, list);
-                    //value type
-                    else
-                        list.Add((T)reader[0]);
-                }
-
-                return list;
-            }
-        }
-
-        /// <summary>
-        /// Returns a object from the query result. If more than one result from query, only the first one is returned.
-        /// Object properties and fields returned from the query must have same name.
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="database"></param>
-        /// <param name="commandType"></param>
-        /// <param name="query"></param>
-        /// <param name="parameters">Parameters for the query</param>
-        /// <param name="keys">Object properties used as unique keys to fill nested list. A new key will insert a new object in the list</param>
-        /// <returns></returns>
-        public static T Get<T>(this Database database, CommandType commandType, string query, IEnumerable<Parameter> parameters, params string[] keys)
-        {
-            using (IDataReader reader = database.ExecuteReader(CreateCommand(database, commandType, query, parameters)))
-            {
-                T obj = default(T);
-                var columnNames = GetColumnNames(reader);
-
-                while (reader.Read())
-                {
-                    //reference type 
-                    if (default(T) == null && typeof(T) != typeof(string))
-                        obj = GetObjectFromDataReader<T>(reader, columnNames, keys, null, obj);
-                    //value type
-                    else
-                        obj = (T)reader[0];
-                }
-
-                return obj;
-            }
-
-        }
-
-        /// <summary>
-        /// <para>Executes the <paramref name="query"/> and returns the number of rows affected.</para>
+        /// Executes the <paramref name="query"/> and returns the number of rows affected.
         /// </summary>
         /// <param name="database"></param>
         /// <param name="commandType"></param>
         /// <param name="query"></param>
-        /// <param name="parameters"></param>
+        /// <param name="parameters">Inform null if no parameter is necessary</param>
         /// <returns></returns>
-        public static int ExecuteNonQuery(this Database database, CommandType commandType, string query, IEnumerable<Parameter> parameters)
-        {
-            return database.ExecuteNonQuery(CreateCommand(database, commandType, query, parameters));
-        }
+        public static int ExecuteNonQuery(this Database database, CommandType commandType, string query, IEnumerable<Parameter> parameters) =>
+            database.ExecuteNonQuery(CreateCommand(database, commandType, query, parameters));
 
         /// <summary>
         /// Executes the <paramref name="query"/> and returns the first column of the first row in the result set returned by the query. Extra columns or rows are ignored.
@@ -101,11 +33,284 @@ namespace Thimens.DataMapper.Old
         /// <param name="database"></param>
         /// <param name="commandType"></param>
         /// <param name="query"></param>
-        /// <param name="parameters"></param>
+        /// <param name="parameters">Inform null if no parameter is necessary</param>
         /// <returns></returns>
-        public static object ExecuteScalar(this Database database, CommandType commandType, string query, IEnumerable<Parameter> parameters)
+        public static object ExecuteScalar(this Database database, CommandType commandType, string query, IEnumerable<Parameter> parameters) =>
+            database.ExecuteScalar(CreateCommand(database, commandType, query, parameters));
+
+        /// <summary>
+        /// Return a list from the query result
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="database"></param>
+        /// <param name="commandType"></param>
+        /// <param name="query"></param>
+        /// <param name="parameters"></param>
+        /// <param name="keys"></param>
+        /// <returns></returns>
+        [Obsolete("List<T> method is deprecated. Please use Get<U> instead, where U is a list of T, e.g., Get<IEnumerable<T>> or Get<ICollection<T>>", true)]
+        public static IEnumerable<T> List<T>(this Database database, CommandType commandType, string query, IEnumerable<Parameter> parameters, params string[] keys)
         {
-            return database.ExecuteScalar(CreateCommand(database, commandType, query, parameters));
+            return null;
+        }
+
+        /// <summary>
+        /// Return T from the query result
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="database"></param>
+        /// <param name="commandType"></param>
+        /// <param name="query"></param>
+        /// <param name="parameters">Inform null if no parameter is necessary</param>
+        /// <param name="keys">Fields from query result that will be used as list keys</param>
+        /// <returns></returns>
+        public static T Get<T>(this Database database, CommandType commandType, string query, IEnumerable<Parameter> parameters, params string[] keys)
+        {
+            if (IsListType(typeof(T)))
+                return Get<ContainerClass<T>>(database, commandType, query, parameters, keys).Content;
+
+            using (IDataReader dataReader = database.ExecuteReader(CreateCommand(database, commandType, query, parameters)))
+            {
+                T obj = default(T);
+
+                var maps = GetDataMaps<T>(GetColumnsDictonary(dataReader), keys);
+
+                while (dataReader.Read())
+                {
+                    if (!IsValueType(typeof(T)))
+                        GetObjectFromDataReader(dataReader, maps, ref obj);
+                    else
+                        obj = (T)dataReader[0];
+                }
+
+                return obj;
+            }
+        }
+
+        private static void GetObjectFromDataReader<T>(IDataReader dataReader, IEnumerable<DataMap> maps, ref T obj)
+        {
+            if (obj == null)
+                obj = Activator.CreateInstance<T>();
+
+            foreach (var map in maps)
+            {
+                var property = map.Property;
+                var propertyType = property?.PropertyType;
+
+                if (map.MapType == MapType.Value)
+                    property.SetValue(obj, ConvertValue(dataReader[map.Column], propertyType));
+                else if (map.MapType == MapType.Reference)
+                {
+                    var oProp = Activator.CreateInstance(propertyType);
+                    GetObjectFromDataReader(dataReader, map.Maps, ref oProp);
+                    property.SetValue(obj, oProp);
+                }
+                else if (map.MapType == MapType.List || map.MapType == MapType.ValueList)
+                {
+                    var listInfo = (dynamic)map.GetListMethod.Invoke(null, new object[] { obj, map, dataReader });
+
+                    if (map.MapType != MapType.ValueList)
+                        GetObjectFromDataReader(dataReader, map.Maps, ref listInfo.Item3);
+
+                    if (listInfo.Item1)
+                        listInfo.Item2.Add(listInfo.Item3);
+
+                    property.SetValue(obj, listInfo.Item2);
+                }
+            }
+        }
+
+        private static (bool IsNewItem, ICollection<T> List, T Item) GetList<T>(object sourceObj, DataMap map, IDataReader dataReader)
+        {
+            var isNewItem = true;
+            T item = Activator.CreateInstance<T>();
+            var keys = map.Maps.Where(m => m.IsKey);
+
+            var list = map.Property.GetValue(sourceObj) as ICollection<T>;
+
+            if (keys.Any())
+            {
+                if (list == null)
+                    list = new HashSet<T>(new HashItemEqualityComparer<T>(map.MapType == MapType.ValueList ? null : keys.Select(k => k.Property).ToArray()));
+
+                foreach (var key in keys)
+                    if (map.MapType == MapType.ValueList)
+                        item = (T)ConvertValue(dataReader[key.Column], typeof(T));
+                    else
+                        key.Property.SetValue(item, ConvertValue(dataReader[key.Column], key.Property.PropertyType));
+
+                if (((HashSet<T>)list).Contains(item))
+                {
+                    isNewItem = false;
+                    item = (((HashSet<T>)list).Comparer as HashItemEqualityComparer<T>).HashItem;
+                }
+            }
+            else
+            {
+                if (list == null)
+                    list = new List<T>();
+
+                if (map.MapType == MapType.ValueList)
+                    item = (T)ConvertValue(dataReader[map.Maps.First().Column], typeof(T));
+            }
+
+            return (isNewItem, list, item);
+        }
+
+
+        /// <summary>
+        /// Converts source obj to Type destinationType
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <param name="destinationType">Type of returned object</param>
+        /// <returns></returns>
+        private static object ConvertValue(object obj, Type destinationType)
+        {
+            if (destinationType.IsEnum)
+            {
+                //check if enum property has an DefaultValueAttribute annotation to be validated. 
+                foreach (var eValor in Enum.GetValues(destinationType))
+                {
+                    var attribute = (DefaultValueAttribute)destinationType.GetField(eValor.ToString()).GetCustomAttributes(typeof(DefaultValueAttribute), false).FirstOrDefault();
+
+                    if (attribute != null && attribute.Value.Equals(obj))
+                        return eValor;
+                }
+
+                return Enum.Parse(destinationType, obj.ToString(), true);
+            }
+            else if (obj.GetType() == typeof(string))
+                //check if the database field are a string used as boolean ('Y', 'N') and the property is boolean
+                if (destinationType == typeof(bool))
+                    return obj.ToString().Trim().Replace('"', '\'').ToLower() == "y" ? true : false;
+                else
+                    return Convert.ChangeType(obj.ToString().Trim().Replace('"', '\''), Nullable.GetUnderlyingType(destinationType) ?? destinationType);
+            else
+                return Convert.ChangeType(obj, Nullable.GetUnderlyingType(destinationType) ?? destinationType);
+        }
+
+
+        private static IEnumerable<DataMap> GetDataMaps<T>(IDictionary<string, string[]> columns, IEnumerable<string> keys)
+        {
+            //properties to return
+            var maps = new List<DataMap>();
+            var columnGroups = columns.GroupBy(c => c.Value[0]);
+
+            var t = typeof(ContainerClass<>);
+            var w = typeof(T);
+
+            //ContainerClass is not mapped on columns. Used as container for lists on Get<IEnumarable<T>> calls
+            if (typeof(T).IsGenericType && typeof(T).GetGenericTypeDefinition() == typeof(ContainerClass<>))
+                AddMap(columns, typeof(T).GetProperty("Content"), "");
+            else
+            {
+                //properties of T
+                var tProps = new Dictionary<string, PropertyInfo>();
+
+                //value types do not have properties, so fake one
+                if (IsValueType(typeof(T)))
+                    tProps.Add(columnGroups.First().Key, typeof(ContainerClass<T>).GetProperty("Content"));
+                else
+                    tProps = typeof(T).GetProperties()?.ToDictionary(p => p.Name.ToLower());
+
+                foreach (var columnGroup in columnGroups)
+                    if (tProps.TryGetValue(columnGroup.Key, out PropertyInfo property))
+                        AddMap(columnGroup, property, columnGroup.First().Key);
+            }
+
+            return maps;
+
+            //local function to create and add a map to maplist
+            void AddMap(IEnumerable<KeyValuePair<string, string[]>> columnGroup, PropertyInfo property, string columnName)
+            {
+                //value type
+                if (IsValueType(property.PropertyType))
+                    maps.Add(new DataMap()
+                    {
+                        Column = columnName,
+                        Property = property,
+                        MapType = MapType.Value,
+                        IsKey = keys.Any(k => k.Equals(columnName, StringComparison.OrdinalIgnoreCase))
+                    });
+                else
+                {
+                    Type propType;
+                    MapType mapType;
+
+                    //list
+                    if (IsListType(property.PropertyType))
+                    {
+                        if (!property.PropertyType.IsAssignableFrom(typeof(List<>).MakeGenericType(property.PropertyType.GetGenericArguments())) && !property.PropertyType.IsAssignableFrom(typeof(HashSet<>).MakeGenericType(property.PropertyType.GetGenericArguments())))
+                            throw new ApplicationException($"Could not resolve property {property.Name} of type {property.PropertyType.Name}. The property must be assingnabe from a List<T> if has no keys, or from a HashSet<T> if has keys");
+
+                        if (property.PropertyType.IsArray)
+                            propType = property.PropertyType.GetElementType();
+                        else
+                            propType = property.PropertyType.GetGenericArguments()[0];
+
+                        if (IsValueType(propType))
+                            mapType = MapType.ValueList;
+                        else
+                            mapType = MapType.List;
+                    }
+                    //class or interface
+                    else
+                    {
+                        mapType = MapType.Reference;
+                        propType = property.PropertyType;
+                    }
+
+                    var columnsDict = new Dictionary<string, string[]>();
+
+                    foreach (var column in columnGroup)
+                    {
+                        var arr = column.Value.ToList();
+
+                        if (!string.IsNullOrWhiteSpace(columnName))
+                            arr.RemoveAt(0);
+
+                        if (arr.Count > 0)
+                            columnsDict[column.Key] = arr.ToArray();
+                    }
+
+                    var map = new DataMap()
+                    {
+                        Property = property,
+                        MapType = mapType,
+                        GetListMethod = ((Func<object, DataMap, IDataReader, (bool, ICollection<int>, int)>)GetList<int>).Method.GetGenericMethodDefinition().MakeGenericMethod(propType),
+                        Maps = (IEnumerable<DataMap>)((Func<IDictionary<string, string[]>, IEnumerable<string>, IEnumerable<DataMap>>)GetDataMaps<string>)
+                        .Method
+                        .GetGenericMethodDefinition()
+                        .MakeGenericMethod(propType)
+                        .Invoke(null, new object[] { columnsDict, keys })
+                    };
+
+                    maps.Add(map);
+                }
+            }
+        }
+
+        private static IDictionary<string, string[]> GetColumnsDictonary(IDataReader dataReader)
+        {
+            var dict = new Dictionary<string, string[]>();
+
+            for (int i = 0; i < dataReader.FieldCount; i++)
+            {
+                var column = dataReader.GetName(i).ToLower();
+                dict.Add(column, column.Split('.'));
+            }
+
+            return dict;
+        }
+
+        private static bool IsValueType(Type type)
+        {
+            return type.IsValueType || type == typeof(string);
+        }
+
+        private static bool IsListType(Type type)
+        {
+            return typeof(IEnumerable).IsAssignableFrom(type) && type != typeof(string);
         }
 
         private static DbCommand CreateCommand(Database database, CommandType commandType, string query, IEnumerable<Parameter> parameters)
@@ -119,323 +324,10 @@ namespace Thimens.DataMapper.Old
 
             return command;
         }
+    }
 
-        private static T GetObjectFromDataReader<T>(IDataReader dataReader, IEnumerable<string> columnNames, string[] keys, string columnNamePrefix, IList<T> listBeingFilled)
-        {
-            T obj = Activator.CreateInstance<T>();
-            var isNewObj = false;
-
-            if (listBeingFilled == null)
-            {
-                isNewObj = true;
-                listBeingFilled = Activator.CreateInstance<IList<T>>();
-            }
-            else
-                isNewObj = !ValidateKeyProperties<T>( dataReader, keys, columnNamePrefix, listBeingFilled, out obj);
-
-            CreateObjectWithDataReader<T>(dataReader, columnNames, keys, columnNamePrefix, ref obj);
-
-            if (isNewObj)
-                listBeingFilled.Add(obj);
-
-            return obj;
-        }
-
-        private static T GetObjectFromDataReader<T>(IDataReader dataReader, IEnumerable<string> columnNames, string[] keys, string columnNamePrefix, T objectBeingFilled)
-        {
-            T obj = Activator.CreateInstance<T>();
-            var isNewObj = false;
-
-            if (Comparer.Equals(objectBeingFilled, default(T)))
-                isNewObj = true;
-            else
-                isNewObj = !ValidateKeyProperties<T>(dataReader, keys, columnNamePrefix, objectBeingFilled, out obj);
-
-            CreateObjectWithDataReader(dataReader, columnNames, keys, columnNamePrefix, ref obj);
-
-            return obj;
-        }
-
-        private delegate bool ValidateKeyPropertiesFunc<T>(IDataReader dataReader, string[] keys, string columnNamePrefix, object objectBeingFilled, out T objectToFill);
-
-        /// <summary>
-        /// Returns true if exist any object on the list that attends one of the keys and returns that object in the out parameter
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="dataReader"></param>
-        /// <param name="keys"></param>
-        /// <param name="columnNamePrefix">Datareader column name prefix that being filled at the time</param>
-        /// <param name="objectBeingFilled">List or object of type T being filled by datareader at the time</param>
-        /// <param name="objectToFill">Object that matchs the keys</param>
-        /// <returns></returns>
-        private static bool ValidateKeyProperties<T>(IDataReader dataReader, string[] keys, string columnNamePrefix, object objectBeingFilled, out T objectToFill)
-        {
-            IList<T> list = null;
-            T obj = default(T);
-            bool isNewObj = false;
-            IEnumerable<T> subList = null;
-            Dictionary<string, PropertyInfo> dictProps = new Dictionary<string, PropertyInfo>();
-
-            objectToFill = Activator.CreateInstance<T>();
-
-            if ((objectBeingFilled as IList) != null)
-                list = (objectBeingFilled as IList).Cast<T>().ToList();
-
-            if (list == null)
-                if (objectBeingFilled is T)
-                    obj = (T)objectBeingFilled;
-                else
-                    throw new ArgumentException(string.Format("Objeto passado como parêmetro não é do tipo {0} nem lista de {0}", typeof(T).Name));
-
-            //check if keys exists
-            //only keys at the same level at the hierarchy of nested objects and have the same prefix will be valid
-            //
-            var actualKeys = keys.Where(f => f.Count(c => c == '.') == (columnNamePrefix == null ? 0 : columnNamePrefix.Count(c => c == '.')) && (columnNamePrefix == null ? true : f.ToLower().IndexOf(columnNamePrefix.ToLower()) >= 0));
-
-            if (actualKeys.Count() == 0)
-                isNewObj = true;
-            else
-            {
-                //value types don´t have properties. therefore, if one value type are the key, its value will be used in the validation
-                if (list != null && (typeof(T).IsValueType || typeof(T) == typeof(string)))
-                {
-                    subList = list.Where(o => o.Equals(GetValueFromDataReader(dataReader, (columnNamePrefix ?? ""), typeof(T))));
-                    if (subList.Count() == 0)
-                        isNewObj = true;
-                    else
-                        objectToFill = subList.LastOrDefault();
-                }
-                else
-                {
-                    //remove the prefix from the keys
-                    actualKeys = actualKeys.Select(s => columnNamePrefix != null && columnNamePrefix != string.Empty ? s.ToLower().Replace(columnNamePrefix.ToLower(), "") : s);
-
-                    //properties being used as keys
-                    actualKeys.ToList().ForEach(key =>
-                    {
-                        //if the key contains the @ sign, the key is a nested property of another property, so a recursive call is made. 
-                        var keyAux = key.IndexOf("@") >= 0 ? key.Substring(0, key.IndexOf("@")).ToLower() : key.ToLower();
-                        var ps = typeof(T).GetProperties().LastOrDefault(p => p.Name.ToLower() == keyAux);
-                        if (ps != null)
-                            dictProps.Add(key, ps);
-                        else
-                            throw new ArgumentException("Uma ou mais chaves informadas são inválidas");
-                    });
-
-                    /*props = typeof(T).GetProperties().Where(p => chavesAtuais.Count(c => c.ToLower() == p.Name.ToLower()) > 0).ToList();*/
-
-                    //validate the properties
-                    dictProps.ToList().ForEach(d =>
-                    {
-                        if (!d.Value.PropertyType.IsValueType && d.Value.PropertyType != typeof(string) && d.Key.IndexOf("@") == -1)
-                            throw new ArgumentException("Somente propridades do tipo de valor podem ser usadas como 'chave' no preenchimento do objeto");
-                    });
-
-                    if (list == null)
-                    {
-                        dictProps.ToList().ForEach(d =>
-                        {
-                            if (d.Key.IndexOf("@") >= 0)
-                            {
-                                var newKey = columnNamePrefix + d.Key.Substring(0, d.Key.IndexOf("@")) + "." + d.Key.Substring(d.Key.IndexOf("@") + 1);
-                                var outObj = Activator.CreateInstance(d.Value.PropertyType);
-
-                                ValidateKeyPropertiesFunc<string> metodo = ValidateKeyProperties<string>;
-                                isNewObj = isNewObj || !(bool)metodo.Method.GetGenericMethodDefinition().MakeGenericMethod(d.Value.PropertyType).Invoke(null, new object[] { dataReader, new string[] { newKey }, columnNamePrefix + d.Value.Name + ".", d.Value.GetValue(obj, null), outObj });
-                            }
-                            else if (!d.Value.GetValue(obj, null).Equals(GetValueFromDataReader(dataReader, (columnNamePrefix ?? "") + d.Value.Name, d.Value.PropertyType)))
-                                isNewObj = true;
-                        });
-
-                        if (!isNewObj)
-                            objectToFill = obj;
-                    }
-                    else
-                    {
-                        //create a sublist with list items that matched the keys
-                        //in the case of multiple keys, in each loop, only the previous selected objects are validated
-                        dictProps.ToList().ForEach(d =>
-                        {
-                            if (d.Key.IndexOf("@") >= 0)
-                            {
-                                var newKey = columnNamePrefix + d.Key.Substring(0, d.Key.IndexOf("@")) + "." + d.Key.Substring(d.Key.IndexOf("@") + 1);
-                                var outObj = Activator.CreateInstance(d.Value.PropertyType);
-
-                                var parameters = new object[] { dataReader, new string[] { newKey }, columnNamePrefix + d.Value.Name + ".", (subList ?? list).Select(o => Convert.ChangeType(d.Value.GetValue(o, null), d.Value.PropertyType)).ToList(), outObj };
-                                ValidateKeyPropertiesFunc<string> metodo = ValidateKeyProperties<string>;
-                                isNewObj = isNewObj || !(bool)metodo.Method.GetGenericMethodDefinition().MakeGenericMethod(d.Value.PropertyType).Invoke(null, parameters);
-                                subList = (subList ?? list).Where(o => d.Value.GetValue(o, null).Equals(parameters[5]));
-                            }
-                            else
-                                subList = (subList ?? list).Where(o => d.Value.GetValue(o, null).Equals(GetValueFromDataReader(dataReader, (columnNamePrefix ?? "") + d.Value.Name, d.Value.PropertyType)));
-                        });
-
-                        if (subList.Count() == 0)
-                            isNewObj = true;
-                        else
-                            objectToFill = subList.LastOrDefault();
-                    }
-                }
-            }
-
-            return !isNewObj;
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="dataReader"></param>
-        /// <param name="columnNames"></param>
-        /// <param name="keys"></param>
-        /// <param name="columnNamePrefix"></param>
-        /// <param name="objectToFill"></param>
-        private static void CreateObjectWithDataReader<T>(IDataReader dataReader, IEnumerable<string> columnNames, string[] keys, string columnNamePrefix, ref T objectToFill)
-        {
-            var propertyName = string.Empty;
-            var propertyNameAux = string.Empty;
-            List<string> properties = new List<string>();
-
-
-            foreach (var columnName in columnNames)
-            {                
-                //validate if the datareader field is null or have the same prefix informed in parameters
-                if ((dataReader[columnName] != DBNull.Value) && (columnNamePrefix == null || columnName.IndexOf(columnNamePrefix) >= 0))
-                {
-                    //value type
-                    if (typeof(T).IsValueType || typeof(T) == typeof(string))
-                        objectToFill = (T)GetValueFromDataReader(dataReader, columnName, typeof(T));
-                    //reference type
-                    else
-                    {
-                        //get property name
-                        var nomeColunaAux = (columnNamePrefix == null || columnNamePrefix == string.Empty) ? columnName : columnName.Replace(columnNamePrefix, "");
-
-                        if (nomeColunaAux.IndexOf(".") >= 0)
-                            propertyNameAux = nomeColunaAux.Substring(0, nomeColunaAux.IndexOf("."));
-                        else
-                            propertyNameAux = nomeColunaAux;
-
-                        //don´t fill the same property again. this can happen on recursive calls 
-                        if (!properties.Contains(propertyNameAux))
-                        {
-                            propertyName = propertyNameAux;
-                            properties.Add(propertyName);
-
-                            //get property with the same datareader column name
-                            var property = objectToFill.GetType().GetProperties().FirstOrDefault(p => p.Name.ToLower() == propertyName);
-                            if (property != null)
-                            {
-                                //is list
-                                if (typeof(IEnumerable).IsAssignableFrom(property.PropertyType) && property.PropertyType != typeof(string))
-                                {
-                                    if (property.PropertyType.IsInterface && !property.PropertyType.IsAssignableFrom(typeof(List<>).MakeGenericType(property.PropertyType.GetGenericArguments())))
-                                        throw new ApplicationException($"Could not resolve property {property.Name} of type {property.PropertyType.Name}. The property must be instantiable or assingnabe from a List<T>");
-
-                                    dynamic dynList = property.GetValue(objectToFill, null) ?? (property.PropertyType.IsArray ? Array.CreateInstance(property.PropertyType.GetElementType(), 0) : property.PropertyType.IsInterface ? Activator.CreateInstance(typeof(List<>).MakeGenericType(property.PropertyType.GetGenericArguments())) : Activator.CreateInstance(property.PropertyType));
-                                    var list = Enumerable.ToList(dynList);
-
-                                    Func<IDataReader, IEnumerable<string>, string[], string, IList<string>, string> metodo = GetObjectFromDataReader<string>;
-                                    var newObject = metodo.Method.GetGenericMethodDefinition().MakeGenericMethod(property.PropertyType.IsArray ? property.PropertyType.GetElementType() : property.PropertyType.GetGenericArguments().First()).Invoke(null, new object[] { dataReader, columnNames, keys, columnNamePrefix + propertyName + ".", list });
-
-                                    property.SetValue(objectToFill, ConvertObjectList(list, dynList), null);
-                                }
-                                //is class or interface
-                                else if (!property.PropertyType.IsValueType && property.PropertyType != typeof(string))
-                                {
-                                    Func<IDataReader, IEnumerable<string>, string[], string, string, string> metodo = GetObjectFromDataReader<string>;
-                                    property.SetValue(objectToFill, metodo.Method.GetGenericMethodDefinition().MakeGenericMethod(property.PropertyType).Invoke(null, new object[] { dataReader, columnNames, keys, columnNamePrefix + propertyName + ".", null }), null);
-                                }
-                                //is value type
-                                else
-                                    property.SetValue(objectToFill, GetValueFromDataReader(dataReader, columnName, property.PropertyType), null);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        /// <summary>
-        /// Returns object from datareader
-        /// </summary>
-        /// <param name="dataReader"></param>
-        /// <param name="columnName">Datareader column name</param>
-        /// <param name="type">Type of returned object</param>
-        /// <returns></returns>
-        private static object GetValueFromDataReader(IDataReader dataReader, string columnName, Type type)
-        {
-            if (type.IsEnum)
-            {
-                //check if enum property has an DefaultValueAttribute annotation to be validated. 
-                foreach (var eValor in Enum.GetValues(type))
-                {
-                    var attribute = (DefaultValueAttribute)type.GetField(eValor.ToString()).GetCustomAttributes(typeof(DefaultValueAttribute), false).FirstOrDefault();
-
-                    if (attribute != null && attribute.Value.Equals(dataReader[columnName]))
-                        return eValor;
-                }
-
-                return Enum.Parse(type, dataReader[columnName].ToString(), true);
-            }
-            else if (dataReader[columnName].GetType() == typeof(string))
-                //check if the database field are a string used as boolean ('Y', 'N') and the property is boolean
-                if (type == typeof(bool))
-                    return dataReader[columnName].ToString().Trim().Replace('"', '\'').ToLower() == "y" ? true : false;
-                else
-                    return Convert.ChangeType(dataReader[columnName].ToString().Trim().Replace('"', '\''), Nullable.GetUnderlyingType(type) ?? type);
-            else
-                return Convert.ChangeType(dataReader[columnName], Nullable.GetUnderlyingType(type) ?? type);
-        }
-
-        /// <summary>
-        /// Convert a list to another type
-        /// </summary>
-        /// <typeparam name="T">Type of new List</typeparam>
-        /// <typeparam name="V">Type of current List</typeparam>
-        /// <param name="objectList">Original list</param>
-        /// <param name="newList">List which the type T is used to convert the original list</param>
-        /// <returns></returns>
-        private static List<T> ConvertObjectList<V, T>(IEnumerable<V> objectList, IEnumerable<T> newList)
-        {
-            return objectList.Cast<T>().ToList();
-        }
-
-        /// <summary>
-        /// Convert a list to another array type
-        /// </summary>
-        /// <typeparam name="T">Type of new Array</typeparam>
-        /// <typeparam name="V">Type of current List</typeparam>
-        /// <param name="objectList">Original list</param>
-        /// <param name="newList">>Array which the type T is used to convert the original list</param>
-        /// <returns></returns>
-        private static T[] ConvertObjectList<V, T>(IEnumerable<V> objectList, T[] newList)
-        {
-            return objectList.Cast<T>().ToArray();
-        }
-
-        /// <summary>
-        /// Get column names from dataReader
-        /// </summary>
-        /// <param name="dataReader"></param>
-        /// <returns></returns>
-        private static IEnumerable<string> GetColumnNames(IDataReader dataReader)
-        {
-            var columns = new HashSet<string>();
-
-            try
-            {
-                foreach (DataRow column in dataReader.GetSchemaTable().Rows)
-                    columns.Add(column["ColumnName"].ToString().ToLower());                
-            }
-
-            catch (NotSupportedException)
-            {
-                for(int i = 0; i < dataReader.FieldCount; i++)
-                    columns.Add(dataReader.GetName(i).ToLower());
-            }
-
-            return columns;
-        }
+    internal class ContainerClass<T>
+    {
+        public T Content { get; set; }
     }
 }
