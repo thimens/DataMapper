@@ -38,7 +38,23 @@ namespace Thimens.DataMapper.New
             database.ExecuteScalar(CreateCommand(database, commandType, query, parameters));
 
         /// <summary>
-        /// 
+        /// Return a list from database
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="database"></param>
+        /// <param name="commandType"></param>
+        /// <param name="query"></param>
+        /// <param name="parameters"></param>
+        /// <param name="keys"></param>
+        /// <returns></returns>
+        [Obsolete("List<T> method is deprecated. Please use Get<U> instead, where U is a list of T, e.g., Get<IEnumerable<T>> or Get<ICollection<T>>", true)]
+        public static IEnumerable<T> List<T>(this Database database, CommandType commandType, string query, IEnumerable<Parameter> parameters, params string[] keys)
+        {
+            return null;
+        }
+
+        /// <summary>
+        /// Return T from database
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="database"></param>
