@@ -179,83 +179,98 @@ namespace Thimens.DataMapper.New
             var maps = new List<DataMap>();
             var columnGroups = columns.GroupBy(c => c.Value[0]);
 
-            //properties of T
-            var tProps = typeof(T).GetProperties()?.ToDictionary(p => p.Name.ToLower());
+            var t = typeof(ContainerClass<>);
+            var w = typeof(T);
 
-            //value types do not have properties
-            if (IsValueType(typeof(T)))
+            //ContainerClass is not mapped on columns. Used as container for lists on Get<IEnumarable<T>> calls
+            if (typeof(T).IsGenericType && typeof(T).GetGenericTypeDefinition() == typeof(ContainerClass<>))
+                AddMap(columns, typeof(T).GetProperty("Content"), "");
+            else
             {
-                tProps.Clear();
-                tProps.Add(columnGroups.First().Key, typeof(ContainerClass<T>).GetProperty("Content"));
-            }
+                //properties of T
+                var tProps = new Dictionary<string, PropertyInfo>();
 
-            foreach(var columnGroup in columnGroups)
-            {                
-                if (tProps.TryGetValue(columnGroup.Key, out PropertyInfo property))
-                {
-                    //value type
-                    if (IsValueType(property.PropertyType))
-                        maps.Add(new DataMap() {
-                            Column = columnGroup.First().Key,
-                            Property = property,
-                            MapType = MapType.Value,
-                            IsKey = keys.Any(k => k.Equals(columnGroup.First().Key, StringComparison.OrdinalIgnoreCase))
-                        });
-                    else
-                    {
-                        Type propType;
-                        MapType mapType; 
+                //value types do not have properties, so fake one
+                if (IsValueType(typeof(T)))                
+                    tProps.Add(columnGroups.First().Key, typeof(ContainerClass<T>).GetProperty("Content"));
+                else
+                    tProps = typeof(T).GetProperties()?.ToDictionary(p => p.Name.ToLower());
 
-                        //list
-                        if (IsListType(property.PropertyType))
-                        {
-                            if (!property.PropertyType.IsInterface && !property.PropertyType.IsAssignableFrom(typeof(List<>).MakeGenericType(property.PropertyType.GetGenericArguments())) && !property.PropertyType.IsAssignableFrom(typeof(HashSet<>).MakeGenericType(property.PropertyType.GetGenericArguments())))
-                                throw new ApplicationException($"Could not resolve property {property.Name} of type {property.PropertyType.Name}. The property must be instantiable or assingnabe from a List<T> or HashSet<T>");
-                            
-                            if (property.PropertyType.IsArray)
-                                propType = property.PropertyType.GetElementType();
-                            else
-                                propType = property.PropertyType.GetGenericArguments()[0];
-
-                            if (IsValueType(propType))
-                                mapType = MapType.ValueList;
-                            else
-                                mapType = MapType.List;
-                        }
-                        //class or interface
-                        else
-                        {
-                            mapType = MapType.Reference;
-                            propType = property.PropertyType;
-                        }
-                        
-                        var columnsDict = new Dictionary<string, string[]>();
-                        foreach(var column in columnGroup)
-                        {
-                            var arr = column.Value.ToList();
-                            arr.RemoveAt(0);
-                            if (arr.Count > 0)
-                                columnsDict[column.Key] = arr.ToArray();
-                        }
-
-                        var map = new DataMap()
-                        {
-                            Property = property,
-                            MapType = mapType,                            
-                            GetListMethod = ((Func<object, DataMap, IDataReader, (bool, ICollection<int>, int)>)GetList<int>).Method.GetGenericMethodDefinition().MakeGenericMethod(propType),
-                            Maps = (IEnumerable<DataMap>)((Func<IDictionary<string, string[]>, IEnumerable<string> , IEnumerable<DataMap>>)GetDataMaps<string>)
-                            .Method
-                            .GetGenericMethodDefinition()
-                            .MakeGenericMethod(propType)
-                            .Invoke(null, new object[] { columnsDict, keys })
-                        };
-
-                        maps.Add(map);                                       
-                    }
-                }
-            }            
+                foreach (var columnGroup in columnGroups)
+                    if (tProps.TryGetValue(columnGroup.Key, out PropertyInfo property))
+                        AddMap(columnGroup, property, columnGroup.First().Key);
+            }          
 
             return maps;
+
+            //local function to create and add a map to maplist
+            void AddMap(IEnumerable<KeyValuePair<string, string[]>> columnGroup, PropertyInfo property, string columnName)
+            {
+                //value type
+                if (IsValueType(property.PropertyType))
+                    maps.Add(new DataMap()
+                    {
+                        Column = columnName,
+                        Property = property,
+                        MapType = MapType.Value,
+                        IsKey = keys.Any(k => k.Equals(columnName, StringComparison.OrdinalIgnoreCase))
+                    });
+                else
+                {
+                    Type propType;
+                    MapType mapType;
+
+                    //list
+                    if (IsListType(property.PropertyType))
+                    {
+                        if (!property.PropertyType.IsAssignableFrom(typeof(List<>).MakeGenericType(property.PropertyType.GetGenericArguments())) && !property.PropertyType.IsAssignableFrom(typeof(HashSet<>).MakeGenericType(property.PropertyType.GetGenericArguments())))
+                            throw new ApplicationException($"Could not resolve property {property.Name} of type {property.PropertyType.Name}. The property must be assingnabe from a List<T> if has no keys, or from a HashSet<T> if has keys");
+
+                        if (property.PropertyType.IsArray)
+                            propType = property.PropertyType.GetElementType();
+                        else
+                            propType = property.PropertyType.GetGenericArguments()[0];
+
+                        if (IsValueType(propType))
+                            mapType = MapType.ValueList;
+                        else
+                            mapType = MapType.List;
+                    }
+                    //class or interface
+                    else
+                    {
+                        mapType = MapType.Reference;
+                        propType = property.PropertyType;
+                    }
+
+                    var columnsDict = new Dictionary<string, string[]>();
+
+                    foreach (var column in columnGroup)
+                    {
+                        var arr = column.Value.ToList();
+
+                        if (!string.IsNullOrWhiteSpace(columnName))
+                            arr.RemoveAt(0);
+
+                        if (arr.Count > 0)
+                            columnsDict[column.Key] = arr.ToArray();
+                    }
+
+                    var map = new DataMap()
+                    {
+                        Property = property,
+                        MapType = mapType,
+                        GetListMethod = ((Func<object, DataMap, IDataReader, (bool, ICollection<int>, int)>)GetList<int>).Method.GetGenericMethodDefinition().MakeGenericMethod(propType),
+                        Maps = (IEnumerable<DataMap>)((Func<IDictionary<string, string[]>, IEnumerable<string>, IEnumerable<DataMap>>)GetDataMaps<string>)
+                        .Method
+                        .GetGenericMethodDefinition()
+                        .MakeGenericMethod(propType)
+                        .Invoke(null, new object[] { columnsDict, keys })
+                    };
+
+                    maps.Add(map);
+                }
+            }
         }
 
         private static IDictionary<string, string[]> GetColumnsDictonary(IDataReader dataReader)

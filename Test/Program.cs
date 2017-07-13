@@ -12,7 +12,7 @@ namespace Test
         static void Main(string[] args)
         {
             DatabaseProviderFactory.RegisterFactory(SqlClientFactory.Instance, "SQL");
-            var db = DatabaseProviderFactory.Create(@"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename=D:\Projetos\Repos\Thimens.DataMapper\Test\Database.mdf;Integrated Security=True;Connect Timeout=30", "SQL");
+            var db = DatabaseProviderFactory.Create(@"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename=C:\Users\lc001093\Source\Repos\Thimens.DataMapper\Test\Database.mdf;Integrated Security=True;Connect Timeout=30", "SQL");
 
             var query = @"select c.id, c.name, o.Id ""orders.id"", o.deliveryTime ""orders.deliverytime"", p.productId ""orders.products.id"", p.name ""orders.products.name"", p.value ""orders.products.value"" " +
                 "from client c inner join [order] o " +
@@ -43,7 +43,16 @@ namespace Test
                         "on o.id = p.orderId " +
                 "where c.id in (1, 2)";
 
-            var clients = db.Get<IEnumerable<Client>>(CommandType.Text, query, null, "orders.id", "orders.products.id");
+            var clients = db.Get<IEnumerable<Client>>(CommandType.Text, query, null, "id", "ordersid.id");
+
+            query = @"select c.id, c.name, o.Id ""orders.id"", o.deliveryTime ""orders.deliverytime"", p.productId ""orders.products.id"", p.name ""orders.products.name"", p.value ""orders.products.value"" " +
+                "from client c inner join [order] o " +
+                        "on c.id = o.clientId " +
+                    "inner join order_product p " +
+                        "on o.id = p.orderId " +
+                "where c.id in (1, 2)";
+
+            clients = db.Get<IEnumerable<Client>>(CommandType.Text, query, null, "id", "orders.id", "orders.products.id");
 
         }
     }
