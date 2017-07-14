@@ -1,1 +1,0 @@
-﻿select c.id, c.name, o.Id "orders.id", o.deliveryTime "orders.deliverytime", p.productId "orders.products.id", p.name "orders.products.name", p.value "orders.products.value" from client c inner join [order] o on c.id = o.clientId inner join order_product p on o.id = p.orderId where c.id = 1
