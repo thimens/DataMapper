@@ -12,7 +12,7 @@ The **Get\<T>** method returns T with data from database (lists and nested lists
 
 The **ExecuteScalar** and **ExecuteNonQuery** are just extensions of original methods of Database class, but now accepting new parameters. The first one  returns the first column of the first row in the result set returned by a query, and the last one returns the numbers of rows affected by the query.
 
-Obs: The **List\<T>** method is deprecated. To return a list from database, use Get<U> instead, where U is a list of T, e.g., Get<IEnumerable<T>> or Get<ICollection<T>>
+Obs: The **List\<T>** method is deprecated. To return a list from database, use Get\<U> instead, where U is a list of T, e.g., Get\<IEnumerable\<T>> or Get\<ICollection\<T>>
 
 ## Get\<T> method
 Use this method to return a T object from database. To do so, the columns name of the result set must match the properties name of the object that you want to fill (case-insensitive). Properties and columns with different names are ignored.  
