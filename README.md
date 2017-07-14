@@ -5,7 +5,7 @@ Nugget package [here](https://www.nuget.org/packages/Thimens.DataMapper).
 
 Just match the fields name of your query (or procedure) with the properties tree of your class, and, if you're using lists, inform their key(s). And that's it! Sweet freshly read data mapped directly to your class. No extra coding necessary.
 
-The project's been build over a modified code of the Database class (and few more classes) of [Enterprise Library Data Access Application Block](https://msdn.microsoft.com/en-us/library/microsoft.practices.enterpriselibrary.data.database(v=pandp.60).aspx) to run over .NET Standard 2.0.
+The project's been built over a modified code of the Database class (ok, and few more classes) of [Enterprise Library Data Access Application Block](https://msdn.microsoft.com/en-us/library/microsoft.practices.enterpriselibrary.data.database(v=pandp.60).aspx) to run over .NET Standard 2.0.
 
 ## Overview
 The **Get\<T>** method returns T with data from database (lists and nested lists included!). 
