@@ -49,7 +49,7 @@ var db = DatabaseProviderFactory.Create(connectionString, "SQL"); //create a new
 
 var query = "select OrderNumber as Id, ClientName, DtDelivery as DeliveryDate, Freight from Order where OrderNumber = @OrderNumber";
 
-var parameters = List<Parameter>();
+var parameters = new List<Parameter>();
 parameters.Add(new Parameter("@OrderNumber", DbType.Int32, orderNumber));
 
 return db.Get<Order>(CommandType.Text, query, parameters);
@@ -87,7 +87,7 @@ var db = DatabaseProviderFactory.Create(connectionString, "SQL"); //create a new
 var query = @"select OrderNumber as Id, ClientName, Street as ""Address.Street"", Number as ""Address.Number"", zip as ""Address.Zip""
 from Order where OrderNumber = @OrderNumber";
 
-var parameters = List<Parameter>();
+var parameters = new List<Parameter>();
 parameters.Add(new Parameter("@OrderNumber", DbType.Int32, orderNumber));
 
 return db.Get<Order>(CommandType.Text, query, parameters);
@@ -126,7 +126,7 @@ var db = DatabaseProviderFactory.Create(connectionString, "SQL"); //create a new
 
 var query = @"select o.OrderNumber as Id, o.ClientName, p.Id as ""Products.Id"", p.Quantity as ""Products.Quantity"", p.Name as ""Products.Name"" from Order o inner join OrderProduct p on o.OrderNumber = p.OrderNumber where o.OrderNumber = @OrderNumber";
 
-var parameters = List<Parameter>();
+var parameters = new List<Parameter>();
 parameters.Add(new Parameter("@OrderNumber", DbType.Int32, orderNumber));
 
 return db.Get<Order>(CommandType.Text, query, parameters, "Products.Id");
@@ -168,7 +168,7 @@ var db = DatabaseProviderFactory.Create(connectionString, "SQL"); //create a new
 
 var query = @"select sc.Id, sc.Name, st.Id ""Students.Id"", st.Name ""Students.Name"", c.Id ""Students.Classes.Id"", c.Name ""Students.Classes.Name"" from School sc inner join Students st on sc.Id = st.SchoolId inner join StudentClass c on c.StudentId = st.Id  where sc.Id = @SchoolId";
 
-var parameters = List<Parameter>();
+var parameters = new List<Parameter>();
 parameters.Add(new Parameter("@SchoolId", DbType.Int32, schoolId));
 
 return db.Get<Order>(CommandType.Text, query, parameters, "Students.Id", "Students.Classes.Id");
@@ -231,7 +231,7 @@ var db = DatabaseProviderFactory.Create(connectionString, "SQL"); //create a new
 
 var query = @"select Id, ClientName, Status from Subscription where id = @id";
 
-var parameters = List<Parameter>();
+var parameters = new List<Parameter>();
 parameters.Add(new Parameter("@id", DbType.Int32, id));
 
 return db.Get<Subscription>(CommandType.Text, query, parameters);
@@ -257,7 +257,7 @@ var db = DatabaseProviderFactory.Create(connectionString, "SQL"); //create a new
 
 var query = "update Student set (firstName, lastName) = (@firstName, @lastName) where id = @id";
 
-var parameters = List<Parameter>();
+var parameters = new List<Parameter>();
 parameters.Add(new Parameter("@id", DbType.Int32, id));
 parameters.Add(new Parameter("@firstName", DbType.String, firstName));
 parameters.Add(new Parameter("@lastName", DbType.String, lastName));
