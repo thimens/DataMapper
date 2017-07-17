@@ -1,21 +1,21 @@
 # DataMapper
-A easy-to-use and powerfull object mapper for .NET. 
+A easy-to-use and high performance object mapper for .NET. 
 
 Nugget package [here](https://www.nuget.org/packages/Thimens.DataMapper).
 
-No extra coding necessary. Just match the fields name of your query (or procedure) with the properties tree of your class, and, if you're using lists, inform their key(s). And that's it! Sweet freshly read data mapped directly to your class.
+Just match the fields name of your query (or procedure) with the properties tree of your class, and, if you're using lists, inform their key(s). And that's it! Sweet freshly read data mapped directly to your class. No extra coding necessary.
 
-The project's been build over a modified code of the Database class (and few more classes) of [Enterprise Library Data Access Application Block](https://msdn.microsoft.com/en-us/library/microsoft.practices.enterpriselibrary.data.database(v=pandp.60).aspx) to run over .NET Standard 2.0.
+The project's been built over a modified code of the Database class (ok, and few more classes) of [Enterprise Library Data Access Application Block](https://msdn.microsoft.com/en-us/library/microsoft.practices.enterpriselibrary.data.database(v=pandp.60).aspx) to run over .NET Standard 2.0.
 
 ## Overview
-The **Get\<T>** method returns a single object filled with data from database (nested objects and lists included!). 
-
-The **List\<T>** method returns a list of objects.
+The **Get\<T>** method returns T with data from database (lists and nested lists included!). 
 
 The **ExecuteScalar** and **ExecuteNonQuery** are just extensions of original methods of Database class, but now accepting new parameters. The first one  returns the first column of the first row in the result set returned by a query, and the last one returns the numbers of rows affected by the query.
 
+Obs: The **List\<T>** method is deprecated. To return a list from database, use Get\<U> instead, where U is a list of T, e.g., Get\<IEnumerable\<T>> or Get\<ICollection\<T>>
+
 ## Get\<T> method
-Use this method to fill a single object from database. To do so, the columns name of the result set must match the properties name of the object that you want to fill (case-insensitive). Properties and columns with different names are ignored.  
+Use this method to return a T object from database. To do so, the columns name of the result set must match the properties name of the object that you want to fill (case-insensitive). Properties and columns with different names are ignored.  
 You can use the **Parameter** class to add parameters to your query. If it is not necessary, just use *null* in the call.
 
 ### Basic usage
@@ -49,7 +49,7 @@ var db = DatabaseProviderFactory.Create(connectionString, "SQL"); //create a new
 
 var query = "select OrderNumber as Id, ClientName, DtDelivery as DeliveryDate, Freight from Order where OrderNumber = @OrderNumber";
 
-var parameters = List<Parameter>();
+var parameters = new List<Parameter>();
 parameters.Add(new Parameter("@OrderNumber", DbType.Int32, orderNumber));
 
 return db.Get<Order>(CommandType.Text, query, parameters);
@@ -87,7 +87,7 @@ var db = DatabaseProviderFactory.Create(connectionString, "SQL"); //create a new
 var query = @"select OrderNumber as Id, ClientName, Street as ""Address.Street"", Number as ""Address.Number"", zip as ""Address.Zip""
 from Order where OrderNumber = @OrderNumber";
 
-var parameters = List<Parameter>();
+var parameters = new List<Parameter>();
 parameters.Add(new Parameter("@OrderNumber", DbType.Int32, orderNumber));
 
 return db.Get<Order>(CommandType.Text, query, parameters);
@@ -126,7 +126,7 @@ var db = DatabaseProviderFactory.Create(connectionString, "SQL"); //create a new
 
 var query = @"select o.OrderNumber as Id, o.ClientName, p.Id as ""Products.Id"", p.Quantity as ""Products.Quantity"", p.Name as ""Products.Name"" from Order o inner join OrderProduct p on o.OrderNumber = p.OrderNumber where o.OrderNumber = @OrderNumber";
 
-var parameters = List<Parameter>();
+var parameters = new List<Parameter>();
 parameters.Add(new Parameter("@OrderNumber", DbType.Int32, orderNumber));
 
 return db.Get<Order>(CommandType.Text, query, parameters, "Products.Id");
@@ -168,7 +168,7 @@ var db = DatabaseProviderFactory.Create(connectionString, "SQL"); //create a new
 
 var query = @"select sc.Id, sc.Name, st.Id ""Students.Id"", st.Name ""Students.Name"", c.Id ""Students.Classes.Id"", c.Name ""Students.Classes.Name"" from School sc inner join Students st on sc.Id = st.SchoolId inner join StudentClass c on c.StudentId = st.Id  where sc.Id = @SchoolId";
 
-var parameters = List<Parameter>();
+var parameters = new List<Parameter>();
 parameters.Add(new Parameter("@SchoolId", DbType.Int32, schoolId));
 
 return db.Get<Order>(CommandType.Text, query, parameters, "Students.Id", "Students.Classes.Id");
@@ -177,38 +177,8 @@ The `Classes` list of a student will be filled only with classes of that specifi
 
 You can use nested objects and nested lists at the same time without any problem.
 
-#### Special case for list key
-In some rare cases, you may have a key for a list that is not a property of the list item, but a property of a nested property of the item. In these cases, you can inform this type of key with `@` sign. For example, the key `"Volumes.Sector@Id"` means: the property `Id` of property `Sector` of each volume in `Volumes` list will be used as key. The classes hierarchy that describe this case is:
-```c#
-public class MainClass
-{
-  public List<Volume> Volumes { get; set; }
-}
-
-public class Volume
-{
-  public decimal Weight { get; set; }
-  public Sector Sector { get; set; }
-}
-
-public class Sector
-{
-  public int Id { get; set; }
-  public string Name { get; set; }
-}
-```
-And the code:
-```c#
-return db.Get<MainClass>(CommandType.Text, query, parameters, "Volumes.Sector@Id"); //returns a object MainClass with a list of volumes inside it
-```
-Or:
-```c#
-return db.List<Volume>(CommandType.Text, query, parameters, "Sector@Id"); //returns a list of volumes directly
-```
-Therefore, when filling the `Volumes` list, the property `Id` of property `Sector` will be checked to validate if the item is already in the list. 
-
-## List\<T> method
-Use like the **Get\<T>** method, and just like nested lists, you can inform the key(s) of the list.
+### Returning lists
+To return a list of T class from database, use **Get\<U>**, where U is a list of T, e.g., **Get\<IEnumerable\<T>>** or **Get\<ICollection\<T>>**. Just like nested lists, you can inform the key(s) of the list.
 
 The class:
 ```c#
@@ -228,7 +198,7 @@ var db = DatabaseProviderFactory.Create(connectionString, "SQL"); //create a new
 
 var query = "select OrderNumber as Id, ClientName, DtDelivery as DeliveryDate, Freight from Order";
 
-return db.List<Order>(CommandType.Text, query, null, "Id"); //no parameters
+return db.Get<IEnumerable<Order>>(CommandType.Text, query, null, "Id"); //no parameters
 ```
 The property `Id` will be used as key to fill the list of orders.
 
@@ -261,7 +231,7 @@ var db = DatabaseProviderFactory.Create(connectionString, "SQL"); //create a new
 
 var query = @"select Id, ClientName, Status from Subscription where id = @id";
 
-var parameters = List<Parameter>();
+var parameters = new List<Parameter>();
 parameters.Add(new Parameter("@id", DbType.Int32, id));
 
 return db.Get<Subscription>(CommandType.Text, query, parameters);
@@ -287,7 +257,7 @@ var db = DatabaseProviderFactory.Create(connectionString, "SQL"); //create a new
 
 var query = "update Student set (firstName, lastName) = (@firstName, @lastName) where id = @id";
 
-var parameters = List<Parameter>();
+var parameters = new List<Parameter>();
 parameters.Add(new Parameter("@id", DbType.Int32, id));
 parameters.Add(new Parameter("@firstName", DbType.String, firstName));
 parameters.Add(new Parameter("@lastName", DbType.String, lastName));
