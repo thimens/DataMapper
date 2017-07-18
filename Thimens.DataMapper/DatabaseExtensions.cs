@@ -424,7 +424,11 @@ namespace Thimens.DataMapper
             return command;
         }
 
-
+        /// <summary>
+        /// Create a empty T list
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
         private static T CreateEmptyList<T>()
         {
             var arguments = typeof(T).GetGenericArguments();
