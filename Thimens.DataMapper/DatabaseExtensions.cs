@@ -70,7 +70,9 @@ namespace Thimens.DataMapper
             if (IsListType(typeof(T)))
             {
                 var container = Get<ContainerClass<T>>(database, commandType, query, parameters, keys);
-                return container == null ? default(T) : container.Content;
+
+                return container != null ? container.Content : CreateEmptyList<T>();
+                
             }
 
             //read data from database
@@ -421,8 +423,17 @@ namespace Thimens.DataMapper
 
             return command;
         }
-        
-        
+
+
+        private static T CreateEmptyList<T>()
+        {
+            var arguments = typeof(T).GetGenericArguments();
+            var listType = typeof(List<>).MakeGenericType(arguments);
+            if (typeof(T).IsAssignableFrom(listType))
+                return (T)Activator.CreateInstance(listType);
+            else
+                return (T)Activator.CreateInstance(typeof(HashSet<>).MakeGenericType(arguments));
+        }
     }
 
     /// <summary>

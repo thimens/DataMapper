@@ -11,7 +11,7 @@ namespace Test
         static void Main(string[] args)
         {
             DatabaseProviderFactory.RegisterFactory(SqlClientFactory.Instance, "SQL");
-            var db = DatabaseProviderFactory.Create(@"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename=C:\Users\lc001093\Source\Repos\Thimens.DataMapper\Test\Database.mdf;Integrated Security=True;Connect Timeout=30", "SQL");
+            var db = DatabaseProviderFactory.Create(@"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename=D:\thibas\Repos\Thimens.DataMapper\Test\Database.mdf;Integrated Security=True;Connect Timeout=30", "SQL");
 
             var query = @"select c.id, c.name, o.Id ""orders.id"", o.deliveryTime ""orders.deliverytime"", p.productId ""orders.products.id"", p.name ""orders.products.name"", p.value ""orders.products.value"" " +
                 "from client c inner join [order] o " +
