@@ -204,7 +204,7 @@ The property `Id` will be used as key to fill the list of orders.
 
 ### Lists and DBNull
 
-If a list item value or a list item key is DBNull, the list item is dismissed and not included in the list.
+If a list item value or a list item key (if you have specified any) is DBNull, the list item is dismissed and not included in the list.
 
 ## Special conversions
 There are two special conversions that you can use:  
