@@ -202,6 +202,10 @@ return db.Get<IEnumerable<Order>>(CommandType.Text, query, null, "Id"); //no par
 ```
 The property `Id` will be used as key to fill the list of orders.
 
+### Lists and DBNull
+
+If a list item value or a list item key is DBNull, the list item is dismissed and not included in the list.
+
 ## Special conversions
 There are two special conversions that you can use:  
 
