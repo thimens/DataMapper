@@ -159,7 +159,7 @@ namespace Thimens.DataMapper
         private static (bool IsNewItem, bool DismissItem, ICollection<T> List, T Item) GetListInfo<T>(object sourceObj, DataMap map, IDataReader dataReader)
         {
             var isNewItem = true;
-            T item = Activator.CreateInstance<T>();
+            T item = typeof(T) == typeof(string) ? default(T) : Activator.CreateInstance<T>();
 
             //get the keys of the list
             var keys = map.Maps.Where(m => m.IsKey);
