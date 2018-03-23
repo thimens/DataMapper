@@ -11,9 +11,13 @@ namespace Test
         static void Main(string[] args)
         {
             DatabaseProviderFactory.RegisterFactory(SqlClientFactory.Instance, "SQL");
-            var db = DatabaseProviderFactory.Create(@"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename=D:\thibas\Repos\Thimens.DataMapper\Test\Database.mdf;Integrated Security=True;Connect Timeout=30", "SQL");
+            var db = DatabaseProviderFactory.Create(@"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename=C:\Users\XXX\Source\Repos\DataMapper\Test\Database.mdf;Integrated Security=True;Connect Timeout=30", "SQL");
 
-            var query = @"select c.id, c.name, o.Id ""orders.id"", o.deliveryTime ""orders.deliverytime"", p.productId ""orders.products.id"", p.name ""orders.products.name"", p.value ""orders.products.value"" " +
+            var query = "select id, status from [order]";
+
+            var order = db.Get<IEnumerable<Order>>(CommandType.Text, query, null, 1, "id");
+
+            query = @"select c.id, c.name, o.Id ""orders.id"", o.deliveryTime ""orders.deliverytime"", p.productId ""orders.products.id"", p.name ""orders.products.name"", p.value ""orders.products.value"" " +
                 "from client c inner join [order] o " +
                         "on c.id = o.clientId " + 
                     "inner join order_product p " +
@@ -82,8 +86,7 @@ namespace Test
 
             query = @"select p.productid from order_product p";
 
-            var prods = db.Get<IEnumerable<int>>(CommandType.Text, query, null);
-
+            var prods = db.Get<IEnumerable<int>>(CommandType.Text, query, null);            
         }
     }
 }

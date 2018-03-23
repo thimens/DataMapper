@@ -25,8 +25,31 @@ namespace Thimens.DataMapper
         /// <param name="parameters">Inform null if no parameter is necessary</param>
         /// <returns></returns>
         public static int ExecuteNonQuery(this Database database, CommandType commandType, string query, IEnumerable<Parameter> parameters) =>
-            database.ExecuteNonQuery(CreateCommand(database, commandType, query, parameters));
+            database.ExecuteNonQuery(CreateCommand(database, commandType, query, parameters, null));
 
+        /// <summary>
+        /// Executes the <paramref name="query"/> and returns the number of rows affected.
+        /// </summary>
+        /// <param name="database"></param>
+        /// <param name="commandType"></param>
+        /// <param name="query"></param>
+        /// <param name="timeout">The wait time in seconds before terminating the attempt to execute a command and generating an error.</param>
+        /// <returns></returns>
+        public static int ExecuteNonQuery(this Database database, CommandType commandType, string query, int timeout) =>
+            database.ExecuteNonQuery(CreateCommand(database, commandType, query, null, timeout));
+
+        /// <summary>
+        /// Executes the <paramref name="query"/> and returns the number of rows affected.
+        /// </summary>
+        /// <param name="database"></param>
+        /// <param name="commandType"></param>
+        /// <param name="query"></param>
+        /// <param name="parameters">Inform null if no parameter is necessary</param>
+        /// <param name="timeout">The wait time in seconds before terminating the attempt to execute a command and generating an error.</param>
+        /// <returns></returns>
+        public static int ExecuteNonQuery(this Database database, CommandType commandType, string query, IEnumerable<Parameter> parameters, int timeout) =>
+            database.ExecuteNonQuery(CreateCommand(database, commandType, query, parameters, timeout));
+        
         /// <summary>
         /// Executes the <paramref name="query"/> and returns the first column of the first row in the result set returned by the query. Extra columns or rows are ignored.
         /// </summary>
@@ -36,7 +59,30 @@ namespace Thimens.DataMapper
         /// <param name="parameters">Inform null if no parameter is necessary</param>
         /// <returns></returns>
         public static object ExecuteScalar(this Database database, CommandType commandType, string query, IEnumerable<Parameter> parameters) =>
-            database.ExecuteScalar(CreateCommand(database, commandType, query, parameters));
+            database.ExecuteScalar(CreateCommand(database, commandType, query, parameters, null));
+
+        /// <summary>
+        /// Executes the <paramref name="query"/> and returns the first column of the first row in the result set returned by the query. Extra columns or rows are ignored.
+        /// </summary>
+        /// <param name="database"></param>
+        /// <param name="commandType"></param>
+        /// <param name="query"></param>
+        /// <param name="timeout">The wait time in seconds before terminating the attempt to execute a command and generating an error.</param>
+        /// <returns></returns>
+        public static object ExecuteScalar(this Database database, CommandType commandType, string query, int timeout) =>
+            database.ExecuteScalar(CreateCommand(database, commandType, query, null, timeout));
+
+        /// <summary>
+        /// Executes the <paramref name="query"/> and returns the first column of the first row in the result set returned by the query. Extra columns or rows are ignored.
+        /// </summary>
+        /// <param name="database"></param>
+        /// <param name="commandType"></param>
+        /// <param name="query"></param>
+        /// <param name="parameters">Inform null if no parameter is necessary</param>
+        /// <param name="timeout">The wait time in seconds before terminating the attempt to execute a command and generating an error.</param>
+        /// <returns></returns>
+        public static object ExecuteScalar(this Database database, CommandType commandType, string query, IEnumerable<Parameter> parameters, int timeout) =>
+            database.ExecuteScalar(CreateCommand(database, commandType, query, parameters, timeout));
 
         /// <summary>
         /// Return a list from the query result
@@ -49,10 +95,7 @@ namespace Thimens.DataMapper
         /// <param name="keys"></param>
         /// <returns></returns>
         [Obsolete("List<T> method is deprecated. Please use Get<U> instead, where U is a list of T, e.g., Get<IEnumerable<T>> or Get<ICollection<T>>", true)]
-        public static IEnumerable<T> List<T>(this Database database, CommandType commandType, string query, IEnumerable<Parameter> parameters, params string[] keys)
-        {
-            return null;
-        }
+        public static IEnumerable<T> List<T>(this Database database, CommandType commandType, string query, IEnumerable<Parameter> parameters, params string[] keys) => null;
 
         /// <summary>
         /// Return T object from the result set
@@ -64,19 +107,110 @@ namespace Thimens.DataMapper
         /// <param name="parameters"></param>
         /// <param name="keys">Fields from query result that will be used as lists keys</param>
         /// <returns></returns>
-        public static T Get<T>(this Database database, CommandType commandType, string query, IEnumerable<Parameter> parameters, params string[] keys)
-        {
+        public static T Get<T>(this Database database, CommandType commandType, string query, IEnumerable<Parameter> parameters, params string[] keys) =>
+            Get<T>(database, CreateCommand(database, commandType, query, parameters, null), keys);
+
+        /// <summary>
+        /// Return T object from the result set
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="database"></param>
+        /// <param name="commandType"></param>
+        /// <param name="query"></param>
+        /// <param name="timeout">The wait time in seconds before terminating the attempt to execute a command and generating an error.</param>
+        /// <param name="keys">Fields from query result that will be used as lists keys</param>
+        /// <returns></returns>
+        public static T Get<T>(this Database database, CommandType commandType, string query, int timeout, params string[] keys) =>
+            Get<T>(database, CreateCommand(database, commandType, query, null, timeout), keys);
+
+        /// <summary>
+        /// Return T object from the result set
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="database"></param>
+        /// <param name="commandType"></param>
+        /// <param name="query"></param>
+        /// <param name="parameters"></param>
+        /// <param name="timeout">The wait time in seconds before terminating the attempt to execute a command and generating an error.</param>
+        /// <param name="keys">Fields from query result that will be used as lists keys</param>
+        /// <returns></returns>
+        public static T Get<T>(this Database database, CommandType commandType, string query, IEnumerable<Parameter> parameters, int timeout, params string[] keys) =>
+            Get<T>(database, CreateCommand(database, commandType, query, parameters, timeout), keys);
+
+        /// <summary>
+        /// Return T object from the result set
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="database"></param>
+        /// <param name="transaction"></param>
+        /// <param name="commandType"></param>
+        /// <param name="query"></param>
+        /// <param name="parameters"></param>
+        /// <param name="keys">Fields from query result that will be used as lists keys</param>
+        /// <returns></returns>
+        public static T Get<T>(this Database database, DbTransaction transaction, CommandType commandType, string query, IEnumerable<Parameter> parameters, params string[] keys) =>
+            Get<T>(database, transaction, CreateCommand(database, commandType, query, parameters, null), keys);
+
+        /// <summary>
+        /// Return T object from the result set
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="database"></param>
+        /// <param name="transaction"></param>
+        /// <param name="commandType"></param>
+        /// <param name="query"></param>
+        /// <param name="timeout">The wait time in seconds before terminating the attempt to execute a command and generating an error.</param>
+        /// <param name="keys">Fields from query result that will be used as lists keys</param>
+        /// <returns></returns>
+        public static T Get<T>(this Database database, DbTransaction transaction, CommandType commandType, string query, int timeout, params string[] keys) =>
+            Get<T>(database, transaction, CreateCommand(database, commandType, query, null, timeout), keys);
+
+        /// <summary>
+        /// Return T object from the result set
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="database"></param>
+        /// <param name="transaction"></param>
+        /// <param name="commandType"></param>
+        /// <param name="query"></param>
+        /// <param name="parameters"></param>
+        /// <param name="timeout">The wait time in seconds before terminating the attempt to execute a command and generating an error.</param>
+        /// <param name="keys">Fields from query result that will be used as lists keys</param>
+        /// <returns></returns>
+        public static T Get<T>(this Database database, DbTransaction transaction, CommandType commandType, string query, IEnumerable<Parameter> parameters, int timeout, params string[] keys) =>
+            Get<T>(database, transaction, CreateCommand(database, commandType, query, parameters, timeout), keys);
+
+        /// <summary>
+        /// Return T object from the result set
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="database"></param>
+        /// <param name="command"></param>
+        /// <param name="keys">Fields from query result that will be used as lists keys</param>
+        /// <returns></returns>
+        public static T Get<T>(this Database database, DbCommand command, params string[] keys) =>
+            Get<T>(database, null, command, keys);
+
+        /// <summary>
+        /// Return T object from the result set
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="database"></param>
+        /// <param name="transaction"></param>
+        /// <param name="command"></param>
+        /// <param name="keys">Fields from query result that will be used as lists keys</param>
+        /// <returns></returns>
+        public static T Get<T>(this Database database, DbTransaction transaction, DbCommand command, params string[] keys)
+        { 
             //use a container to enclose lists
             if (IsListType(typeof(T)))
             {
-                var container = Get<ContainerClass<T>>(database, commandType, query, parameters, keys);
-
-                return container != null ? container.Content : CreateEmptyList<T>();
-                
+                var container = Get<ContainerClass<T>>(database, transaction, command, keys);
+                return container != null ? container.Content : CreateEmptyList<T>();                
             }
 
             //read data from database
-            using (IDataReader dataReader = database.ExecuteReader(CreateCommand(database, commandType, query, parameters)))
+            using (IDataReader dataReader = transaction == null ? database.ExecuteReader(command) : database.ExecuteReader(command, transaction))
             {
                 T obj = default(T);
 
@@ -310,12 +444,17 @@ namespace Thimens.DataMapper
                 {
                     Type propType;
                     MapType mapType;
+                    var isAssignableFromList = false;
+                    var isAssignableFromHash = false;
 
                     //list
                     if (IsListType(property.PropertyType))
                     {
-                        if (!property.PropertyType.IsAssignableFrom(typeof(List<>).MakeGenericType(property.PropertyType.GetGenericArguments())) && !property.PropertyType.IsAssignableFrom(typeof(HashSet<>).MakeGenericType(property.PropertyType.GetGenericArguments())))
-                            throw new ApplicationException($"Could not resolve property {property.Name} of type {property.PropertyType.Name}. The property must be assingnabe from a List<T> if has no keys, or from a HashSet<T> if has keys");
+                        isAssignableFromList = property.PropertyType.IsAssignableFrom(typeof(List<>).MakeGenericType(property.PropertyType.GetGenericArguments()));
+                        isAssignableFromHash = property.PropertyType.IsAssignableFrom(typeof(HashSet<>).MakeGenericType(property.PropertyType.GetGenericArguments()));
+
+                        if (!isAssignableFromList && !isAssignableFromHash)
+                            throw new ApplicationException($"Could not resolve property {property.Name} of type {property.PropertyType.Name}. The property must be assingnabe from a List<T> or HashSet<T>");
 
                         if (property.PropertyType.IsArray)
                             propType = property.PropertyType.GetElementType();
@@ -353,6 +492,8 @@ namespace Thimens.DataMapper
                     {
                         Property = property,
                         MapType = mapType,
+                        IsAssignableFromList = isAssignableFromList,
+                        IsAssignableFromHash = isAssignableFromHash,
                         GetListInfoMethod = ((Func<object, DataMap, IDataReader, (bool, bool, ICollection<int>, int)>)GetListInfo<int>).Method.GetGenericMethodDefinition().MakeGenericMethod(propType),
                         Maps = (IEnumerable<DataMap>)((Func<IDictionary<string, string[]>, IEnumerable<string>, IEnumerable<DataMap>>)GetDataMaps<string>)
                         .Method
@@ -360,6 +501,10 @@ namespace Thimens.DataMapper
                         .MakeGenericMethod(propType)
                         .Invoke(null, new object[] { columnsDict, keys })
                     };
+
+                    //if the property is a list, it must be assignable from a hashset if it has keys.
+                    if (IsListType(property.PropertyType) && map.IsAssignableFromHash == false && map.Maps.Any(m => (m.MapType == MapType.Value && m.IsKey) || (m.MapType == MapType.Reference && m.Maps.Any(ms => ms.IsKey))))
+                        throw new ApplicationException($"The property {property.Name} of type {property.PropertyType.Name} is invalid. Lists for wich keys are informed must by assignable from HashSet<>. Either change list type or remove the list key(s)");
 
                     maps.Add(map);
                 }
@@ -403,7 +548,7 @@ namespace Thimens.DataMapper
         {
             return typeof(IEnumerable).IsAssignableFrom(type) && type != typeof(string);
         }
-
+        
         /// <summary>
         /// Create DbCommand to be executed into database
         /// </summary>
@@ -411,11 +556,15 @@ namespace Thimens.DataMapper
         /// <param name="commandType"></param>
         /// <param name="query"></param>
         /// <param name="parameters"></param>
+        /// <param name="timeout">The wait time in seconds before terminating the attempt to execute a command and generating an error.</param>
         /// <returns></returns>
-        private static DbCommand CreateCommand(Database database, CommandType commandType, string query, IEnumerable<Parameter> parameters)
+        private static DbCommand CreateCommand(Database database, CommandType commandType, string query, IEnumerable<Parameter> parameters, int? timeout)
         {
             var command = database.GetSqlStringCommand(query);
             command.CommandType = commandType;
+
+            if (timeout.HasValue)
+                command.CommandTimeout = timeout.Value;
 
             if (parameters != null)
                 foreach (var parameter in parameters)
