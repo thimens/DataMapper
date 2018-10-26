@@ -1,5 +1,5 @@
 # DataMapper
-A easy-to-use and high performance object mapper for .NET. 
+An easy-to-use and high performance object mapper for .NET. 
 
 Nugget package [here](https://www.nuget.org/packages/Thimens.DataMapper).
 
