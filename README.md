@@ -1,5 +1,5 @@
 # DataMapper
-An easy-to-use and high-performance object mapper (micro-orm) for .NET.
+An easy-to-use and high-performance object mapper (micro ORM) for .NET.
 
 Nugget package [here](https://www.nuget.org/packages/Thimens.DataMapper).
 
