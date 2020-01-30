@@ -15,7 +15,7 @@ The **ExecuteScalar** and **ExecuteNonQuery** are just extensions of original me
 Obs: The **List\<T>** method is deprecated. To return a list from database, use Get\<U> instead, where U is a list of T, e.g., Get\<IEnumerable\<T>> or Get\<ICollection\<T>>
 
 ## Get\<T> method
-Use this method to return a T object from database. To do so, the columns name of the result set must match the properties name of the object that you want to fill (case-insensitive). Properties and columns with different names are ignored.  
+Use this method to return a T object from database. To do so, the columns name of the result set must match the properties name of the object that you want to set (case-insensitive). Properties and columns with different names are ignored.  
 You can use the **Parameter** class to add parameters to your query. If it is not necessary, just use *null* in the call.
 
 ### Basic usage
@@ -54,7 +54,7 @@ parameters.Add(new Parameter("@OrderNumber", DbType.Int32, orderNumber));
 
 return db.Get<Order>(CommandType.Text, query, parameters);
 ```
-And voilá! Your `Order` class with `Id`, `ClientName`, `DeliveryDate` and `Freight` properties filled from database.
+And voilá! Your `Order` class with `Id`, `ClientName`, `DeliveryDate` and `Freight` properties set from database.
 
 ### Nested objects
 The classes:
@@ -100,7 +100,7 @@ Or:
 `@"select c.AddrZip as ""Order.Client.Address.Zip"" from Order o inner join Client c on o.ClientId = c.Id where o.OrderNumber = @OrderNumber"`
 
 ### Nested Lists
-Pretty much like nested objects. With nested lists, you have the option to inform the property(ies) that will be used as key to fill the list (like a single or composite primary key in a database table).
+Pretty much like nested objects. With nested lists, you have the option to inform the property(ies) that will be used as key to add to the list (like a single or composite primary key in a database table).
 
 The classes:
 ```c#
@@ -173,7 +173,7 @@ parameters.Add(new Parameter("@SchoolId", DbType.Int32, schoolId));
 
 return db.Get<Order>(CommandType.Text, query, parameters, "Students.Id", "Students.Classes.Id");
 ```
-The `Classes` list of a student will be filled only with classes of that specific student.
+The `Classes` list of a student will be created only with classes of that specific student.
 
 You can use nested objects and nested lists at the same time without any problem.
 
@@ -200,7 +200,7 @@ var query = "select OrderNumber as Id, ClientName, DtDelivery as DeliveryDate, F
 
 return db.Get<IEnumerable<Order>>(CommandType.Text, query, null, "Id"); //no parameters
 ```
-The property `Id` will be used as key to fill the list of orders.
+The property `Id` will be used as key to add to the list of orders.
 
 ### Lists and DBNull
 
@@ -209,7 +209,7 @@ If a list item value or a list item key (if you have specified any) is DBNull, t
 ## Special conversions
 There are two special conversions that you can use:  
 
-1.You can fill a enum property of your object from a string column of database, if your enum values have the `DefaultValue` attribute on them.  
+1.You can set a enum property of your object from a string column of database, if your enum values have the `DefaultValue` attribute on them.  
 For example, if you have the following values on `Status` column of the `Subscription` table: `"P"` (Paused), `"A"` (Active), `"I"` (Idle):  
 
 The class:
@@ -241,8 +241,7 @@ parameters.Add(new Parameter("@id", DbType.Int32, id));
 return db.Get<Subscription>(CommandType.Text, query, parameters);
 ```
 
-2.You can fill a bool property from a string column, if this column has `"Y" - "N"` values.  
-
+2.You can set a bool property from a string column, if this column has `"Y" - "N"` values.  
 
 
 ## ExecuteScalar and ExecuteNonQuery
