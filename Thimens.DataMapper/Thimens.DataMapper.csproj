@@ -7,9 +7,9 @@
     <RootNamespace>Thimens.DataMapper</RootNamespace>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Description>A easy-to-use and high performance Micro-ORM for .NET</Description>
-    <AssemblyVersion>3.1.0.0</AssemblyVersion>
-    <FileVersion>3.1.0.0</FileVersion>
-    <Version>3.1.0</Version>
+    <AssemblyVersion>3.2.0.0</AssemblyVersion>
+    <FileVersion>3.2.0.0</FileVersion>
+    <Version>3.2.0</Version>
     <PackageLicenseUrl>https://opensource.org/licenses/MS-PL</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/thimens/DataMapper/</PackageProjectUrl>
     <RepositoryUrl>https://github.com/thimens/DataMapper/</RepositoryUrl>
