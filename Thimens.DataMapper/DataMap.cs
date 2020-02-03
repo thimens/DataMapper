@@ -13,7 +13,9 @@ namespace Thimens.DataMapper
         public MapType MapType { get; set; }
         public IEnumerable<DataMap> Maps { get; set; }
         public Type ListInnerType { get; set; }
-        public MethodInfo GetListMethod { get; set; }
+        public MethodInfo GetListInfoMethod { get; set; }
+        public bool IsAssignableFromList { get; set; }
+        public bool IsAssignableFromHash { get; set; }
     }
 
     internal enum MapType

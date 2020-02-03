@@ -61,6 +61,24 @@ namespace Test
 
             client = db.Get<Client>(CommandType.Text, query, null);
 
+            query = @"select c.id, c.name, o.Id ""ordersid.id"" " +
+               "from client c inner join [order] o " +
+                       "on c.id = o.clientId " +
+                   "inner join order_product p " +
+                       "on o.id = p.orderId " +
+               "where c.id = 0";
+
+            client = db.Get<Client>(CommandType.Text, query, null);
+
+            query = @"select c.id, c.name, o.Id ""ordersid.id"" " +
+               "from client c left join [order] o " +
+                       "on c.id = o.clientId " +
+                   "left join order_product p " +
+                       "on o.id = p.orderId " +
+               "where c.id = 9";
+
+            client = db.Get<Client>(CommandType.Text, query, null);
+
             Console.WriteLine("---------------------------");
             Console.WriteLine($"ID: {client.ID}");
             Console.WriteLine($"Name: {client.Name}");

@@ -7,17 +7,18 @@
     <RootNamespace>Thimens.DataMapper</RootNamespace>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Description>A easy-to-use and high performance Micro-ORM for .NET</Description>
-    <AssemblyVersion>3.0.0.0</AssemblyVersion>
-    <FileVersion>3.0.0.0</FileVersion>
-    <Version>3.0.0</Version>
+    <AssemblyVersion>3.1.0.0</AssemblyVersion>
+    <FileVersion>3.1.0.0</FileVersion>
+    <Version>3.1.0</Version>
     <PackageLicenseUrl>https://opensource.org/licenses/MS-PL</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/thimens/DataMapper/</PackageProjectUrl>
-    <RepositoryUrl>https://opensource.org/licenses/MS-PL</RepositoryUrl>
+    <RepositoryUrl>https://github.com/thimens/DataMapper/</RepositoryUrl>
     <PackageTags>micro-orm, orm, datamapper, data mapper, object mapper, microorm, dapper</PackageTags>
     <RepositoryType>GIT</RepositoryType>
     <Authors>Thiago Mendes</Authors>
     <Company />
     <Product>DataMapper</Product>
+    <PackageReleaseNotes />
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
